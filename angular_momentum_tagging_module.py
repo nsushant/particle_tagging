@@ -195,6 +195,7 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
         ##################################################### SECOND LOOP ###############################################################
         
         selected_particles = np.array([[np.nan],[np.nan]])
+        mstars_total_darklight_l = [] 
         
         # number of stars left over after selection (per iteration)
         leftover=0
@@ -366,7 +367,6 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
                         child_str_l = children_ahf[0][1:-1].split()
 
                         children_ahf_int = list(map(float, child_str_l))
-
                         
                         #pynbody.analysis.halo.center(h)
                         
@@ -436,11 +436,13 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
                         t_id = int(np.where(z_set_vals==red_all[i+1])[0][0])
                         #print('chosen merger particles ----------------------------------------------',len(chosen_merger_particles))
                         #loop over the merging halos and collect particles from each of them
-                
+                    
+                        #mstars_total_darklight = np.array([])
+                        
                         for hDM in hmerge_added[t_id][0]:
                             gc.collect()
                             print('halo:',hDM)
-
+                        
                             if (occupation_fraction != 'all'):
                                 try:
                                     prob_occupied = calculate_poccupied(hDM,occupation_fraction)
@@ -455,23 +457,31 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
                                     continue
                             
                             try:
-                                t_2,redshift_2,vsmooth_2,sfh_in2,mstar_in2,mstar_merging = DarkLight(hDM,DMO=True,poccupied=occupation_fraction)
+                                t_2,redshift_2,vsmooth_2,sfh_in2,mstar_in2,mstar_merging = DarkLight(hDM,DMO=True,poccupied=occupation_fraction,mergers=True)
                                 print(len(t_2))
-                        
+                                print(mstar_merging)
                             except Exception as e :
                                 print(e)
                                 print('there are no darklight stars')
+                                #mstars_total_darklight = np.append(mstars_total_darklight,0.0)
+                            
                                 continue
                     
                     
                             if len(mstar_merging)==0:
+                                #mstars_total_darklight = np.append(mstars_total_darklight,0.0)
                                 continue
 
                             mass_select_merge= mstar_merging[-1]
+                            #mstars_total_darklight = np.append(mstars_total_darklight,mass_select_merge)
+
+                            print(mass_select_merge)
                             if int(mass_select_merge)<1:
                                 leftover+=mstar_merging[-1]
                                 continue
+                            
                             simfn = join(pynbody_path,DMOname,snapshots[i])
+
                             if float(mass_select_merge) >0 and decision2==True:
                                 # try to load in the data from this snapshot
                                 try:
@@ -488,7 +498,7 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
                                 try:
                                     h_merge = DMOparticles.halos()[int(hDM.calculate('halo_number()'))-1]
                                     pynbody.analysis.halo.center(h_merge,mode='hyb')
-
+                                    
                                 except:
                                     print('centering data unavailable, skipping')
                                     continue
@@ -523,7 +533,8 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
 
                             #pynbody.analysis.halo.center(h_merge,mode='hyb').revert()
                 
-                    
+                    #mstars_total_darklight_l.append(mstars_total_darklight)
+                            
                                     
                 if decision==True or decl==True:
                     del DMOparticles
@@ -776,7 +787,7 @@ def calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_file=None
                 print('could not calculate R200c')
                 continue
             DMOparticles = DMOparticles[sqrt(DMOparticles['pos'][:,0]**2 + DMOparticles['pos'][:,1]**2 + DMOparticles['pos'][:,2]**2) <= r200c_pyn ]
-            pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
+            #pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
             
             '''                                                                    
             try:
