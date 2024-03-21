@@ -351,6 +351,7 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
                     #print(rank_order_particles_by_te(z_val, DMOparticles, hDMO, 'insitu'))
                     #pynbody.config["halo-class-priority"] = [pynbody.halo.ahf.AHFCatalogue]
                     
+                    subhalo_iords = np.array([])
                     
                     if AHF_centers_supplied==False:
                         h = DMOparticles.halos()[int(halonums[iout])-1]
@@ -434,6 +435,10 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
                         decl=False
                         
                         t_id = int(np.where(z_set_vals==red_all[i+1])[0][0])
+
+                        if (t_all[i] > 4):
+                            print('reionization -------------------------------------------<<<<<<<<<<<<<<<--------------------------------')
+                    
                         #print('chosen merger particles ----------------------------------------------',len(chosen_merger_particles))
                         #loop over the merging halos and collect particles from each of them
                     

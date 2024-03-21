@@ -17,6 +17,8 @@ def plot_dm_contour(sim_halo,fname):
     dm_particles = dm_particles[calculate_r_vec(dm_particles['pos']) < r200]
     
     pynbody.plot.generic.gauss_kde(dm_particles['x'], dm_particles['y'],mass = dm_particles['mass'])
+
+    plt.tight_layout()
     
     plt.savefig(fname)
 
