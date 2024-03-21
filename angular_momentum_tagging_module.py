@@ -428,113 +428,114 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
                     #get mergers ----------------------------------------------------------------------------------------------------------------
                     # check whether current the snapshot has a the redshift just before the merger occurs.
                     
-                    if (((i+1<len(red_all)) and (red_all[i+1] in z_set_vals)) and (mergers == True)):
+                if (((i+1<len(red_all)) and (red_all[i+1] in z_set_vals)) and (mergers == True)):
                         
-                        decision2 = False if decision==True else True
+                    decision2 = False if decision==True else True
 
-                        decl=False
-                        
-                        t_id = int(np.where(z_set_vals==red_all[i+1])[0][0])
-
-                        if (t_all[i] > 4):
-                            print('reionization -------------------------------------------<<<<<<<<<<<<<<<--------------------------------')
+                    decl=False
                     
-                        #print('chosen merger particles ----------------------------------------------',len(chosen_merger_particles))
-                        #loop over the merging halos and collect particles from each of them
-                    
-                        #mstars_total_darklight = np.array([])
-                        
-                        for hDM in hmerge_added[t_id][0]:
-                            gc.collect()
-                            print('halo:',hDM)
-                        
-                            if (occupation_fraction != 'all'):
-                                try:
-                                    prob_occupied = calculate_poccupied(hDM,occupation_fraction)
+                    t_id = int(np.where(z_set_vals==red_all[i+1])[0][0])
 
-                                except Exception as e:
-                                    print(e)
-                                    print("poccupied couldn't be calculated")
-                                    continue
-                                
-                                if (np.random.random() > prob_occupied):
-                                    print('Skipped')
-                                    continue
-                            
+                    if (t_all[i] > 4):
+                        print('reionization -------------------------------------------<<<<<<<<<<<<<<<--------------------------------')
+                
+                    #print('chosen merger particles ----------------------------------------------',len(chosen_merger_particles))
+                    #loop over the merging halos and collect particles from each of them
+                
+                    #mstars_total_darklight = np.array([])
+                    DMO_particles = 0 
+                    
+                    for hDM in hmerge_added[t_id][0]:
+                        gc.collect()
+                        print('halo:',hDM)
+                    
+                        if (occupation_fraction != 'all'):
                             try:
-                                t_2,redshift_2,vsmooth_2,sfh_in2,mstar_in2,mstar_merging = DarkLight(hDM,DMO=True,poccupied=occupation_fraction,mergers=True)
-                                print(len(t_2))
-                                print(mstar_merging)
-                            except Exception as e :
+                                prob_occupied = calculate_poccupied(hDM,occupation_fraction)
+
+                            except Exception as e:
                                 print(e)
-                                print('there are no darklight stars')
-                                #mstars_total_darklight = np.append(mstars_total_darklight,0.0)
-                            
-                                continue
-                    
-                    
-                            if len(mstar_merging)==0:
-                                #mstars_total_darklight = np.append(mstars_total_darklight,0.0)
-                                continue
-
-                            mass_select_merge= mstar_merging[-1]
-                            #mstars_total_darklight = np.append(mstars_total_darklight,mass_select_merge)
-
-                            print(mass_select_merge)
-                            if int(mass_select_merge)<1:
-                                leftover+=mstar_merging[-1]
+                                print("poccupied couldn't be calculated")
                                 continue
                             
-                            simfn = join(pynbody_path,DMOname,snapshots[i])
+                            if (np.random.random() > prob_occupied):
+                                print('Skipped')
+                                continue
+                        
+                        try:
+                            t_2,redshift_2,vsmooth_2,sfh_in2,mstar_in2,mstar_merging = DarkLight(hDM,DMO=True,poccupied=occupation_fraction,mergers=True)
+                            print(len(t_2))
+                            print(mstar_merging)
+                        except Exception as e :
+                            print(e)
+                            print('there are no darklight stars')
+                            #mstars_total_darklight = np.append(mstars_total_darklight,0.0)
+                        
+                            continue
+                
+                
+                        if len(mstar_merging)==0:
+                            #mstars_total_darklight = np.append(mstars_total_darklight,0.0)
+                            continue
 
-                            if float(mass_select_merge) >0 and decision2==True:
-                                # try to load in the data from this snapshot
-                                try:
-                                    DMOparticles = pynbody.load(simfn)
-                                    DMOparticles.physical_units()
-                                    print('loaded data in mergers')
-                                # where this data isn't available, notify the user.
-                                except:
-                                    print('--> DMO particle data exists but failed to read it, skipping!')
-                                    continue
-                                decision2 = False
-                                decl=True
+                        mass_select_merge= mstar_merging[-1]
+                        #mstars_total_darklight = np.append(mstars_total_darklight,mass_select_merge)
 
-                                try:
-                                    h_merge = DMOparticles.halos()[int(hDM.calculate('halo_number()'))-1]
-                                    pynbody.analysis.halo.center(h_merge,mode='hyb')
-                                    
-                                except:
-                                    print('centering data unavailable, skipping')
-                                    continue
-                    
-                            if int(mass_select_merge) > 0:
+                        print(mass_select_merge)
+                        if int(mass_select_merge)<1:
+                            leftover+=mstar_merging[-1]
+                            continue
+                        
+                        simfn = join(pynbody_path,DMOname,snapshots[i])
+
+                        if float(mass_select_merge) >0 and decision2==True:
+                            # try to load in the data from this snapshot
+                            try:
+                                DMOparticles = pynbody.load(simfn)
+                                DMOparticles.physical_units()
+                                print('loaded data in mergers')
+                            # where this data isn't available, notify the user.
+                            except:
+                                print('--> DMO particle data exists but failed to read it, skipping!')
+                                continue
+                            decision2 = False
+                            decl=True
+
+                            try:
+                                h_merge = DMOparticles.halos()[int(hDM.calculate('halo_number()'))-1]
+                                pynbody.analysis.halo.center(h_merge,mode='hyb')
+                                
+                            except:
+                                print('centering data unavailable, skipping')
+                                continue
+                
+                        if int(mass_select_merge) > 0:
+                        
+                            print('mass_select:',mass_select_merge)
+                            #print('total energy  ---------------------------------------------------->',DMOparticles.loadable_keys())
+                            print('sorting accreted particles by TE')
+                            #print(rank_order_particles_by_te(z_val, DMOparticles, hDM,'accreted'), 'output')
                             
-                                print('mass_select:',mass_select_merge)
-                                #print('total energy  ---------------------------------------------------->',DMOparticles.loadable_keys())
-                                print('sorting accreted particles by TE')
-                                #print(rank_order_particles_by_te(z_val, DMOparticles, hDM,'accreted'), 'output')
-                                
-                                                        
-                                try:
-                                    accreted_particles_sorted_by_te = rank_order_particles_by_te(red_all[i], DMOparticles, hDM, centering=False)
-                                except:
-                                    continue
-                                
-                                #print(rank_order_particles_by_te(red_all[i], DMOparticles, hDM , centering=True))
-                                
-                                print('assinging stars to accreted particles')
-                                selected_particles,array_to_write_accreted = assign_stars_to_particles(mass_select_merge,accreted_particles_sorted_by_te,float(fmb_percentage),selected_particles)
-
-                                
-                                writer = csv.writer(particle_storage_file)
-                    
+                                                    
+                            try:
+                                accreted_particles_sorted_by_te = rank_order_particles_by_te(red_all[i], DMOparticles, hDM, centering=False)
+                            except:
+                                continue
                             
-                                print('writing accreted particles to output file')
-                                #pynbody.analysis.halo.center(h_merge,mode='hyb').revert()
-                                 
-                                for particle_ids,stellar_masses in zip(array_to_write_accreted[0],array_to_write_accreted[1]):
-                                    writer.writerow([particle_ids,stellar_masses,t_all[i],red_all[i],'accreted'])
+                            #print(rank_order_particles_by_te(red_all[i], DMOparticles, hDM , centering=True))
+                            
+                            print('assinging stars to accreted particles')
+                            selected_particles,array_to_write_accreted = assign_stars_to_particles(mass_select_merge,accreted_particles_sorted_by_te,float(fmb_percentage),selected_particles)
+
+                            
+                            writer = csv.writer(particle_storage_file)
+                
+                        
+                            print('writing accreted particles to output file')
+                            #pynbody.analysis.halo.center(h_merge,mode='hyb').revert()
+                             
+                            for particle_ids,stellar_masses in zip(array_to_write_accreted[0],array_to_write_accreted[1]):
+                                writer.writerow([particle_ids,stellar_masses,t_all[i],red_all[i],'accreted'])
 
                             #pynbody.analysis.halo.center(h_merge,mode='hyb').revert()
                 
