@@ -821,15 +821,28 @@ def calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_file=None
                 
                 dfnew = data_particles[data_particles['t']<=t_all[i]].groupby(['iords']).last()
                 
+                #masses = [dfnew.loc[n]['mstar'] for n in particle_selection_reff_tot['iord']]
+
+                #cen_stars = calc_3D_cm(particle_selection_reff_tot,masses)
+                
+                #particle_selection_reff_tot['pos'] -= cen_stars
+
+
+                if (len(stored_reff)>0):
+                    previous_halflight = stored_reff[-1]
+                    particle_selection_reff_tot = particle_selection_reff_tot[np.sqrt(particle_selection_reff_tot['pos'][:,0]**2+particle_selection_reff_tot['pos'][:,1]**2+particle_selection_reff_tot['pos'][:,2]**2) <= (5*previous_halflight)]
+
                 masses = [dfnew.loc[n]['mstar'] for n in particle_selection_reff_tot['iord']]
-                
-                particle_selection_reff_tot['pos'] -= calc_3D_cm(particle_selection_reff_tot,masses)
-                
-                distances =  np.sqrt(particle_selection_reff_tot['x']**2 + particle_selection_reff_tot['y']**2)
+                cen_stars = calc_3D_cm(particle_selection_reff_tot,masses)
+
+                particle_selection_reff_tot['pos'] -= cen_stars 
+
+                distances =  np.sqrt(particle_selection_reff_tot['x']**2 + particle_selection_reff_tot['y']**2 + particle_selection_reff_tot['z']**2)
+
                 #caculate the center of mass using all the tagged particles
                 #cen_of_mass = center_on_tagged(distances,masses)
                 
-                                
+                            
                 idxs_distances_sorted = np.argsort(distances)
 
                 sorted_distances = np.sort(distances)
@@ -858,7 +871,7 @@ def calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_file=None
                 stored_reff = np.append(stored_reff,float(R_half))
                 kravtsov = hDMO['r200c']*0.02
                 kravtsov_r = np.append(kravtsov_r,kravtsov)
-                particle_selection_reff_tot['pos'] += calc_3D_cm(particle_selection_reff_tot,masses)
+                particle_selection_reff_tot['pos'] += cen_stars
 
                 print('halfmass radius:',R_half)
                 print('Kravtsov_radius:',kravtsov)
