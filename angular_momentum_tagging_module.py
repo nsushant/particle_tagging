@@ -203,6 +203,10 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
         # total stellar mass selected 
         mstar_selected_total = 0
 
+
+
+        accreted_only_particle_ids = np.array([])
+        insitu_only_particle_ids = np.array([])
         #idrz = 9999
         print('this is how the simarray looks',pynbody.array.SimArray(10, units='pc', sim=None))
         #halonums_indexing = 0 
@@ -404,9 +408,14 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
                     pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
                     
                     DMOparticles = DMOparticles[sqrt(DMOparticles['pos'][:,0]**2 + DMOparticles['pos'][:,1]**2 + DMOparticles['pos'][:,2]**2) <= r200c_pyn ] #hDMO['r200c']]
+
                     #print('angular_momentum: ', DMOparticles["j"])
                     
+
                     DMOparticles_insitu_only = DMOparticles[np.logical_not(np.isin(DMOparticles['iord'],subhalo_iords))]
+
+                    #DMOparticles_insitu_only = DMOparticles[np.logical_not(np.isin(DMOparticles['iord'],accreted_only_particle_ids))]
+                    
                     
                     particles_sorted_by_te = rank_order_particles_by_te(z_val, DMOparticles_insitu_only, hDMO, centering=False)
                     
@@ -417,6 +426,13 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
                     #halonums_indexing+=1
                     writer = csv.writer(particle_storage_file)
                     print('writing insitu particles to output file')
+
+
+                    fmb_to_mass_ratio = float(fmb_percentage)/len(particles_sorted_by_te)
+
+                    print(fmb_to_mass_ratio)
+                    
+                    insitu_only_particle_ids = np.append(insitu_only_particle_ids,np.asarray(array_to_write[0]))
                     
                     for particle_ids,stellar_masses in zip(array_to_write[0],array_to_write[1]):
                         writer.writerow([particle_ids,stellar_masses,t_all[i],red_all[i],'insitu'])
@@ -500,37 +516,51 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
                                 continue
                             decision2 = False
                             decl=True
+                            '''
+                            try:
+                                h_merge = DMOparticles.halos()[int(hDM.calculate('halo_number()'))-1]
+                                pynbody.analysis.halo.center(h_merge,mode='hyb')
+                                r200c_pyn_acc = pynbody.analysis.halo.virial_radius(h_merge.d, overden=200, r_max=None, rho_def='critical')
+                            except:
+                                print('centering data unavailable, skipping')
+                                continue
+                            '''
+
+                        if int(mass_select_merge) > 0:
 
                             try:
                                 h_merge = DMOparticles.halos()[int(hDM.calculate('halo_number()'))-1]
                                 pynbody.analysis.halo.center(h_merge,mode='hyb')
-                                
+                                r200c_pyn_acc = pynbody.analysis.halo.virial_radius(h_merge.d, overden=200, r_max=None, rho_def='critical')
                             except:
                                 print('centering data unavailable, skipping')
                                 continue
-                
-                        if int(mass_select_merge) > 0:
-                        
+                                                                                                                       
+                       
                             print('mass_select:',mass_select_merge)
                             #print('total energy  ---------------------------------------------------->',DMOparticles.loadable_keys())
                             print('sorting accreted particles by TE')
                             #print(rank_order_particles_by_te(z_val, DMOparticles, hDM,'accreted'), 'output')
-                            
+                            DMOparticles_acc_only = DMOparticles[sqrt(DMOparticles['pos'][:,0]**2 + DMOparticles['pos'][:,1]**2 + DMOparticles['pos'][:,2]**2) <= r200c_pyn_acc] 
+
+                            #DMOparticles_acc_only = DMOparticles[np.logical_not(np.isin(DMOparticles['iord'],insitu_only_particle_ids))]
                                                     
                             try:
-                                accreted_particles_sorted_by_te = rank_order_particles_by_te(red_all[i], DMOparticles, hDM, centering=False)
+                                accreted_particles_sorted_by_te = rank_order_particles_by_te(red_all[i], DMOparticles_acc_only, hDM, centering=False)
                             except:
                                 continue
                             
                             #print(rank_order_particles_by_te(red_all[i], DMOparticles, hDM , centering=True))
+
+                            free_param_acc = fmb_to_mass_ratio * len(accreted_particles_sorted_by_te)
                             
                             print('assinging stars to accreted particles')
-                            selected_particles,array_to_write_accreted = assign_stars_to_particles(mass_select_merge,accreted_particles_sorted_by_te,float(fmb_percentage),selected_particles)
 
+                            selected_particles,array_to_write_accreted = assign_stars_to_particles(mass_select_merge,accreted_particles_sorted_by_te,float(free_param_acc),selected_particles)
                             
                             writer = csv.writer(particle_storage_file)
                 
-                        
+                            accreted_only_particle_ids = np.append(accreted_only_particle_ids,np.asarray(array_to_write_accreted[0]))
                             print('writing accreted particles to output file')
                             #pynbody.analysis.halo.center(h_merge,mode='hyb').revert()
                              
@@ -689,16 +719,31 @@ def calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_file=None
                 continue
 
             
-            selected_iords_tot = np.unique(data_particles['iords'][data_particles['t']<=t_all[i]].values)
-        
+            dt_all = data_particles[data_particles['t']<=t_all[i]]
+
+
+            data_grouped = dt_all.groupby(['iords']).last()
+            
+            #selected_iords_tot = np.unique(data_particles['iords'][data_particles['t']<=t_all[i]].values)
+
+            selected_iords_tot = data_grouped.index.values
+
+            data_insitu = data_grouped[data_grouped['type'] == 'insitu']
+            
+            selected_iords_insitu_only = data_insitu.index.values
+            
+
             #selected_iords_insitu = np.unique(data_particles['iords'][data_particles['type']=='insitu'][data_particles['t']<=t_all[i]].values)
             
             #selected_iords_acc = np.unique(data_particles['iords'][data_particles['type']=='accreted'][data_particles['t']<=t_all[i]].values)
 
+
             if selected_iords_tot.shape[0]==0:
                 continue
             
-            mstars_at_current_time = data_particles[data_particles['t'] <= t_all[i]].groupby(['iords']).last()['mstar']
+            #mstars_at_current_time = data_particles[data_particles['t'] <= t_all[i]].groupby(['iords']).last()['mstar']
+
+            mstars_at_current_time = data_grouped['mstar'].values
             
             half_mass = float(mstars_at_current_time.sum())/2
             
@@ -793,6 +838,7 @@ def calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_file=None
                 print('could not calculate R200c')
                 continue
             DMOparticles = DMOparticles[sqrt(DMOparticles['pos'][:,0]**2 + DMOparticles['pos'][:,1]**2 + DMOparticles['pos'][:,2]**2) <= r200c_pyn ]
+
             #pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
             
             '''                                                                    
@@ -806,36 +852,61 @@ def calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_file=None
                 continue
             '''
 
-
             
             particle_selection_reff_tot = DMOparticles[np.isin(DMOparticles['iord'],selected_iords_tot)] if len(selected_iords_tot)>0 else []
 
-            print('m200 value---->',hDMO['M200c'])
+            particles_only_insitu = DMOparticles[np.isin(DMOparticles['iord'],selected_iords_insitu_only)] if len(selected_iords_insitu_only) > 0 else []
 
-            
+            print('m200 value---->',hDMO['M200c'])
             
             if (len(particle_selection_reff_tot))==0:
                 print('skipped!')
                 continue
             else:
-                
-                dfnew = data_particles[data_particles['t']<=t_all[i]].groupby(['iords']).last()
-                
-                #masses = [dfnew.loc[n]['mstar'] for n in particle_selection_reff_tot['iord']]
 
-                #cen_stars = calc_3D_cm(particle_selection_reff_tot,masses)
+                dfnew = data_particles[data_particles['t']<=t_all[i]].groupby(['iords']).last()
+
+        
+                masses = [dfnew.loc[n]['mstar'] for n in particle_selection_reff_tot['iord']]
+
+                masses_insitu = [data_insitu.loc[iord]['mstar'] for iord in particles_only_insitu['iord']]
+                    
+                cen_stars = calc_3D_cm(particles_only_insitu,masses_insitu)
+                
+                particle_selection_reff_tot['pos'] -= cen_stars
                 
                 #particle_selection_reff_tot['pos'] -= cen_stars
 
+                # new cutoff calc begins 
+                distances = np.sqrt(particle_selection_reff_tot['x']**2+particle_selection_reff_tot['y']**2 + particle_selection_reff_tot['z']**2)
 
+                b = np.linspace(0,r200c_pyn,num=50)
+
+                bins_digi = np.digitize(distances,bins=b)-1
+
+                data_sum = pd.DataFrame({'bins':bins_digi,'masses':masses}).groupby(['bins']).sum()
+
+                print('masses min',min(data_sum['masses']))
+                print('masses max:', max(data_sum['masses'].values))
+
+                #print('cutoffs:',b[data_sum.index.values[np.where(data_sum['masses'].values < max(data_sum['masses'].values)/100)]])
+
+                if min(data_sum['masses'].values) > (max(data_sum['masses'].values)/100):
+                    id_minima = data_sum.index.values[np.where(data_sum['masses'].values <= min(data_sum['masses']))]
+                else:    
+                    id_minima = data_sum.index.values[np.where(data_sum['masses'].values <= max(data_sum['masses'].values)/100)]
+
+                m_cutoff = min(b[id_minima])
+                # new cutoff calc ends 
                 if (len(stored_reff)>0):
                     previous_halflight = stored_reff[-1]
-                    particle_selection_reff_tot = particle_selection_reff_tot[np.sqrt(particle_selection_reff_tot['pos'][:,0]**2+particle_selection_reff_tot['pos'][:,1]**2+particle_selection_reff_tot['pos'][:,2]**2) <= (5*previous_halflight)]
-
+                    particle_selection_reff_tot = particle_selection_reff_tot[np.sqrt(particle_selection_reff_tot['pos'][:,0]**2+particle_selection_reff_tot['pos'][:,1]**2+particle_selection_reff_tot['pos'][:,2]**2) <= (m_cutoff)]
+                    
                 masses = [dfnew.loc[n]['mstar'] for n in particle_selection_reff_tot['iord']]
-                cen_stars = calc_3D_cm(particle_selection_reff_tot,masses)
 
-                particle_selection_reff_tot['pos'] -= cen_stars 
+                #cen_stars = calc_3D_cm(particle_selection_reff_tot,masses)
+
+                #particle_selection_reff_tot['pos'] -= cen_stars 
 
                 distances =  np.sqrt(particle_selection_reff_tot['x']**2 + particle_selection_reff_tot['y']**2 + particle_selection_reff_tot['z']**2)
 
@@ -859,6 +930,7 @@ def calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_file=None
                 #print(cumilative_sum)
                 
                 halfmass_radius = []
+
                 '''
                 for d in range(len(sorted_distances)):
                     if cumilative_sum[d] >= half_mass:
@@ -871,6 +943,7 @@ def calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_file=None
                 stored_reff = np.append(stored_reff,float(R_half))
                 kravtsov = hDMO['r200c']*0.02
                 kravtsov_r = np.append(kravtsov_r,kravtsov)
+
                 particle_selection_reff_tot['pos'] += cen_stars
 
                 print('halfmass radius:',R_half)
