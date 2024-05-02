@@ -136,7 +136,10 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
         
         if simname[-3] == 'x':
             DMOname = 'Halo'+halonum+'_DMO_'+'Mreion'+simname[-3:]
-
+        
+        elif simname == "void_volume":
+            DMOname = simname 
+        
         else:
             DMOname = 'Halo'+halonum+'_DMO' + ('' if len(split)==2 else ('_' +  '_'.join(split[2:])))
 
@@ -462,16 +465,7 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
                                 continue
                             decision2 = False
                             decl=True
-                            '''
-                            try:
-                                h_merge = DMOparticles.halos()[int(hDM.calculate('halo_number()'))-1]
-                                pynbody.analysis.halo.center(h_merge,mode='hyb')
-                                r200c_pyn_acc = pynbody.analysis.halo.virial_radius(h_merge.d, overden=200, r_max=None, rho_def='critical')
-                            except:
-                                print('centering data unavailable, skipping')
-                                continue
-                            '''
-
+                     
                         if int(mass_select_merge) > 0:
 
                             try:
