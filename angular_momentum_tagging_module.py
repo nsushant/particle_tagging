@@ -207,19 +207,14 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
 
         accreted_only_particle_ids = np.array([])
         insitu_only_particle_ids = np.array([])
-        #idrz = 9999
-        print('this is how the simarray looks',pynbody.array.SimArray(10, units='pc', sim=None))
-        #halonums_indexing = 0 
+
         with open(particle_storage_filename, 'a') as particle_storage_file:
+            
             # looping over all snaps 
             for i in range(len(snapshots)):
                 idxout = np.asarray(np.where(outputs==snapshots[i])).flatten()
-                print(t_all[i],'<-- time at this snap')
-                
-                
-                if t_all[i] >= 2:
-                    print('2 gyr mark ----------------------------')
-                
+                print('time at current snap -->',t_all[i],"Gyr")
+                                
                 if idxout.shape[0] == 0 :
                     print('no matching output found')
                     continue
@@ -229,36 +224,20 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
                 # was particle data loaded in (insitu) 
                 decision=False
 
-                
-
                 # was particle data loaded in (accreted) 
                 decision2=False
                 decl = False
             
-                gc.collect()
-            
-                print('snapshot',i)
+                print('Current snapshot -->',i)
 
                 #get the halo objects at the given timestep if and inform the user if no halos are present.
                 if len(DMOsim.timesteps[i].halos[:])==0:
-                    print('No halos!')
+                    print('No halos found in the tangos db at this timestep')
                     continue
             
-                # if the output corresponding to this snap is found execute the following 
-            
-                # main DMO halo 
-                print(DMOname+'/'+snapshots[i]+'/halo_'+str(halonums[iout]), 'halonums')
-                hDMO = tangos.get_halo(DMOname+'/'+snapshots[i]+'/halo_'+str(halonums[iout]))
-                #print(hDMO.keys) 
-                #print(hDMO.eps)
                 
-                # m200 of the main halo 
-                m200_main_1 = hDMO.calculate_for_progenitors('M200c')[0]
-
-                m200_main = m200_main_1[0] if len(m200_main_1)>0 else 0
-
-                #print(m200_main)
-
+                hDMO = tangos.get_halo(DMOname+'/'+snapshots[i]+'/halo_'+str(halonums[iout]))
+        
                 # value of redshift at the current timestep 
                 z_val = red_all[i]
 
@@ -266,65 +245,44 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
                         
                 # time in gyr
                 t_val = t_all[i]
-                
-            
-                #round each value in the redhsifts list from DarkLight to 6 decimal places
-                #np_round_to_4 = np.round(np.array(abs(t)), 7)
 
+                # 't' is the darklight time array 
+                # idrz is thus the index of the mstar value calculated at the closest time to that of the snap
                 idrz = np.argmin(abs(t - t_val))
 
+                # index of previous snap's mstar value in darklight array
                 idrz_previous = np.argmin(abs(t - t_all[i-1])) if idrz>0 else None 
 
+                # current snap's darklight calculated stellar mass 
                 msn = mstar_s_insitu[idrz]              
-                
-                #get the index at which the redshift of the snapshot is stored in the DarkLight array
-                '''
-                if idrz == 9999:
-                    idrz =np.argmin(abs(t-t_val))
-                else:
-                    idrz+=1
-                print('value of idrz ------>', idrz)
-                '''
-                
+
+                # msp = previous snap's darklight calculated stellar mass 
                 if msn != 0:
+                    # if there wasn't a previous snap msp = 0 
+                    
                     if idrz_previous==None:
                         msp = 0
+                        
+                    # else msp = previous snap's mstar value
                     elif idrz_previous >= 0:
                         msp = mstar_s_insitu[idrz_previous]
                 else:
                     print('There is no stellar mass at current timestep')
                     continue
 
-                                                                                  
-                
-                #UNDEFINED_insitu = -9999
-           
-                # Using the index obtained in idrz get the value of mstar_insitu at this redshift
-            
-                msn = mstar_s_insitu[idrz]
-
-                #if len(idrz)>0 else []
-            
-                #for the given path,entry,snapshot at given index generate a string that includes them
-
-                #simfn = join(pynbody_path,DMOname,snapshots[i])
-                #print(simfn)
-                # getting the previous and current stellar mass (msp = previous, msn = now)
-
-                 
-                #if len(msn)!=0:
-                
-                
-                    
-                print('stellar masses:',msn,msp)
-
+                                                                            
                 #calculate the difference in mass between the two mstar's
                 mass_select = int(msn-msp)
-                #if le(msn)>0 else 0
+                print('stellar mass to be tagged in this snap -->',mass_select)
 
+                # if stellar mass is to be tagged then load in particle data 
+            
                 if mass_select>0:
+                    
                     decision=True
+                    
                     # try to load in the data from this snapshot
+                    
                     try:
                         simfn = join(pynbody_path,DMOname,snapshots[i])
                         print(simfn)
@@ -350,10 +308,7 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
                         print("Couldn't load in the R200 at timestep:" , i)
                         continue
                     print('the time is:',t_all[i])
-                    #h = DMOparticles.halos()[int(halonums[iout])-1]
-                    #pynbody.analysis.halo.center(h)
-                    #print(rank_order_particles_by_te(z_val, DMOparticles, hDMO, 'insitu'))
-                    #pynbody.config["halo-class-priority"] = [pynbody.halo.ahf.AHFCatalogue]
+                
                     
                     subhalo_iords = np.array([])
                     
@@ -371,12 +326,7 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
                         
                         child_str_l = children_ahf[0][1:-1].split()
 
-                        children_ahf_int = list(map(float, child_str_l))
-                        
-                        #pynbody.analysis.halo.center(h)
-                        
-                        #pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
-                    
+                        children_ahf_int = list(map(float, child_str_l))                    
                     
                         halo_catalogue = DMOparticles.halos()
                     
@@ -428,10 +378,6 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
                     print('writing insitu particles to output file')
 
 
-                    fmb_to_mass_ratio = float(fmb_percentage)/len(particles_sorted_by_te)
-
-                    print(fmb_to_mass_ratio)
-                    
                     insitu_only_particle_ids = np.append(insitu_only_particle_ids,np.asarray(array_to_write[0]))
                     
                     for particle_ids,stellar_masses in zip(array_to_write[0],array_to_write[1]):
@@ -550,13 +496,10 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
                             except:
                                 continue
                             
-                            #print(rank_order_particles_by_te(red_all[i], DMOparticles, hDM , centering=True))
-
-                            free_param_acc = fmb_to_mass_ratio * len(accreted_particles_sorted_by_te)
-                            
+                
                             print('assinging stars to accreted particles')
 
-                            selected_particles,array_to_write_accreted = assign_stars_to_particles(mass_select_merge,accreted_particles_sorted_by_te,float(free_param_acc),selected_particles)
+                            selected_particles,array_to_write_accreted = assign_stars_to_particles(mass_select_merge,accreted_particles_sorted_by_te,float(fmb_percentage),selected_particles)
                             
                             writer = csv.writer(particle_storage_file)
                 
@@ -569,7 +512,7 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
 
                             #pynbody.analysis.halo.center(h_merge,mode='hyb').revert()
                 
-                    #mstars_total_darklight_l.append(mstars_total_darklight)
+                  
                             
                                     
                 if decision==True or decl==True:
