@@ -119,89 +119,24 @@ def plum_const(hDMO,z_val,insitu):
 
 #prod_binned
 
-
-def rank_order_particles_by_te(z_val, DMOparticles, hDMO, centering=True):
+def rank_order_particles_by_angmom(z_val, DMOparticles, hDMO, centering=True):
     
-    print('this is how many',len(DMOparticles))
+    print('this is how many DMOparticles were passed',len(DMOparticles))
     
     print('r200',hDMO['r200c'])
-    # filter out particles outside the plummer tidal radius 'a'.
-    #particles_in_selection_radius = DMOparticles[sqrt(DMOparticles['pos'][:,0]**2 + DMOparticles['pos'][:,1]**2 + DMOparticles['pos'][:,2]**2) <= 10*a ]
-    
-    #particles_in_twice_r200 =  DMOparticles[sqrt(DMOparticles['pos'][:,0]**2 + DMOparticles['pos'][:,1]**2 + DMOparticles['pos'][:,2]**2) <= 2*hDMO['r200c'] ]
-    #particles_in_twice_r200['vel']-= particles_in_twice_r200['vel'].mean(axis=0)
 
     particles_in_r200 = DMOparticles[sqrt(DMOparticles['pos'][:,0]**2 + DMOparticles['pos'][:,1]**2 + DMOparticles['pos'][:,2]**2) <= hDMO['r200c']]
     
-    #particles_in_selection_radius = particles_in_r200[sqrt(particles_in_r200['pos'][:,0]**2 + particles_in_r200['pos'][:,1]**2 + particles_in_r200['pos'][:,2]**2) <= 10*a] 
-    #the line below is the correct form 
-    #particles_in_selection_radius = particles_in_r200[sqrt(particles_in_r200['pos'][:,0]**2 + particles_in_r200['pos'][:,1]**2 + particles_in_r200['pos'][:,2]**2) <= 10*a ]
-    #calculated_potential = [pynbody.analysis.gravity.potential(particles_in_r200,particle,eps=min(get_dist(particles_in_r200['pos']))/100,unit='G Msol kpc**-1') for particle in particles_in_selection_radius['pos']]
     softening_length = pynbody.array.SimArray(np.ones(len(particles_in_r200))*10.0, units='pc', sim=None)
+    
+    angular_momenta = get_dist(particles_in_r200['j'])
 
-    # print('units of mass and radius ------------>',hDMO['M200c'],hDMO['r200c'])
-    
-    #virial_vel = G*hDMO['M200c']/hDMO['r200c']
-    
-    #print('calculating potential')
-    
-    #calculated_potential = pynbody.analysis.gravity.potential(particles_in_r200,particles_in_selection_radius['pos'],eps=softening_length,unit='G Msol kpc**-1')
+    #values arranged in ascending order
+    sorted_indicies = np.argsort(angular_momenta.flatten())
 
-    #print('particles in selection radius:',particles_in_selection_radius['pos'].shape)
-    
-    #calculated_potential, calculated_force = pynbody.gravity.calc.direct(particles_in_r200,np.asarray(particles_in_r200['pos']),eps=softening_length)
-    #print('potential calculated!')
-    
-
-    #kinetic_energy = particles_in_r200['ke']
-    #KINETIC_E =  particles_in_selection_radius['ke']
-    #calculated_potential = calculated_potential.in_units(str(kinetic_energy.units))
-    
-    total_energy = get_dist(particles_in_r200['j'])
-    #np.asarray(kinetic_energy)+np.asarray(calculated_potential)
-
-    #virial_test = ((2*kinetic_energy/abs(2*kinetic_energy))*np.log10(abs(2*kinetic_energy)))-((calculated_potential/abs(calculated_potential))*np.log10(np.asarray(abs(calculated_potential)))) 
-    
-    #if len(kinetic_energy)==0:
-       # print('kinetic energy array has no elements -------------> we had ',len(particles_in_r200),'particles')
-     #   kinetic_energy_avg = 0
-        #print(kinetic_energy)
-      #  potential_energy_avg = 0
-        #print('Virial Test:',max(virial_test),min(virial_test))
-        #print(kinetic_energy.units,calculated_potential.units)
-        
-    #else:
-    #kinetic_energy_avg = kinetic_energy
-    #potential_energy_avg = calculated_potential
-        
-    sorted_indicies = np.argsort(total_energy.flatten())
-    #print('sorted_indices:',sorted_indicies.shape)
-    #print("average energies:[ke,pe,z]",kinetic_energy_avg[:10],potential_energy_avg[:10],total_energy[:10],z_val)
-    particles_ordered_by_te = np.asarray(particles_in_r200['iord'])[sorted_indicies] if sorted_indicies.shape[0] != 0 else np.array([]) 
-
-    print(np.where(total_energy[sorted_indicies] <= 0),len(total_energy))
-    #print(total_energy[sorted_indicies][:10])
-    
-    #sorted_total_energies = total_energy[sorted_indicies] 
-
-    #bound_particles = np.where(sorted_total_energies <= max(calculated_potential))
-    
-    #particles_sorted_by_energy = [particles_ordered_by_te[i] for i in bound_particles[0]] if len(bound_particles)>0 else [] 
-
-    
-
-    #particles_in_r200['vel']+=particles_in_r200['vel'].mean(axis=0)
-    
-    
-    #print('particles sorted by TE',total_energy[sorted_indicies][10:], np.asarray(np.asarray(particles_in_r200['ke'])[sorted_indicies] +  np.asarray(calculated_potential).flatten()[sorted_indicies])[10:])
-    
-    virial_velocity = hDMO['M200c']/hDMO['r200c']
-
-    print("virial velocity:", virial_velocity)
-
-    #print('length of particle array: ' , bound_particles, max(calculated_potential))
-
-    return np.asarray(particles_ordered_by_te)
+    particles_ordered_by_angmom = np.asarray(particles_in_r200['iord'])[sorted_indicies] if sorted_indicies.shape[0] != 0 else np.array([]) 
+   
+    return np.asarray(particles_ordered_by_angmom)
 
 
 #get bins 
