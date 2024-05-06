@@ -467,7 +467,7 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
                             leftover+=mstar_merging[-1]
                             continue
                         
-                        simfn = join(pynbody_path,DMOname,snapshots[i])
+                        simfn = join(pynbody_path,snapshots[i])
 
                         if float(mass_select_merge) >0 and decision2==True:
                             # try to load in the data from this snapshot
