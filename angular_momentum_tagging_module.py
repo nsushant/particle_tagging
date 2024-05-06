@@ -382,12 +382,12 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
                     #DMOparticles_insitu_only = DMOparticles[np.logical_not(np.isin(DMOparticles['iord'],accreted_only_particle_ids))]
                     
                     
-                    particles_sorted_by_te = rank_order_particles_by_te(z_val, DMOparticles_insitu_only, hDMO, centering=False)
+                    particles_sorted_by_angmom = rank_order_particles_by_angmom(z_val, DMOparticles_insitu_only, hDMO, centering=False)
                     
-                    if particles_sorted_by_te.shape[0] == 0:
+                    if particles_sorted_by_angmom.shape[0] == 0:
                         continue
                     
-                    selected_particles,array_to_write = assign_stars_to_particles(mass_select,particles_sorted_by_te,float(fmb_percentage),selected_particles)
+                    selected_particles,array_to_write = assign_stars_to_particles(mass_select,particles_sorted_by_angmom,float(fmb_percentage),selected_particles)
                     #halonums_indexing+=1
                     writer = csv.writer(particle_storage_file)
                     print('writing insitu particles to output file')
@@ -502,14 +502,14 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
                             #DMOparticles_acc_only = DMOparticles[np.logical_not(np.isin(DMOparticles['iord'],insitu_only_particle_ids))]
                                                     
                             try:
-                                accreted_particles_sorted_by_te = rank_order_particles_by_te(red_all[i], DMOparticles_acc_only, hDM, centering=False)
+                                accreted_particles_sorted_by_angmom = rank_order_particles_by_angmom(red_all[i], DMOparticles_acc_only, hDM, centering=False)
                             except:
                                 continue
                             
                 
                             print('assinging stars to accreted particles')
 
-                            selected_particles,array_to_write_accreted = assign_stars_to_particles(mass_select_merge,accreted_particles_sorted_by_te,float(fmb_percentage),selected_particles)
+                            selected_particles,array_to_write_accreted = assign_stars_to_particles(mass_select_merge,accreted_particles_sorted_by_angmom,float(fmb_percentage),selected_particles)
                             
                             writer = csv.writer(particle_storage_file)
                 
