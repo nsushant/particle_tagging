@@ -141,7 +141,7 @@ def rank_order_particles_by_angmom(z_val, DMOparticles, hDMO, centering=True):
 
 #get bins 
 
-def assign_stars_to_particles(snapshot_stellar_mass,particles_sorted_by_te,most_bound_fraction,selected_particles):
+def assign_stars_to_particles(snapshot_stellar_mass,particles_sorted_by_angmom,most_bound_fraction,selected_particles):
     
     '''
     selected_particles is a 2d array with rows = 2, cols = num of particles  
@@ -151,15 +151,9 @@ def assign_stars_to_particles(snapshot_stellar_mass,particles_sorted_by_te,most_
     
     '''
     
-    #print('number of particles sorted: ',particles_sorted_by_te)
-
-    #print('no. of particels:', particles_sorted_by_te.shape[0])
-
-    size_of_most_bound_fraction = int(particles_sorted_by_te.shape[0]*most_bound_fraction)
+    size_of_most_bound_fraction = int(particles_sorted_by_angmom.shape[0]*most_bound_fraction)
     
-    particles_in_most_bound_fraction = particles_sorted_by_te[:size_of_most_bound_fraction]
-
-    #print('sorted particles that are in the most bound fraction: ',np.where(np.isin(particles_sorted_by_te,particles_in_most_bound_fraction)==True))
+    particles_in_most_bound_fraction = particles_sorted_by_angmom[:size_of_most_bound_fraction]
     
     #dividing stellar mass evenly over all the particles in the most bound fraction 
 
@@ -167,16 +161,11 @@ def assign_stars_to_particles(snapshot_stellar_mass,particles_sorted_by_te,most_
     
     stellar_mass_assigned = float(snapshot_stellar_mass/len(list(particles_in_most_bound_fraction))) if len(list(particles_in_most_bound_fraction))>0 else 0
     
-    
     #check if particles have been selected before 
     
     idxs_previously_selected = np.where(np.isin(selected_particles[0],particles_in_most_bound_fraction)==True)
-
-    #print('indicies of particles selected in previous snap that are still in fmb:',np.where(np.isin(particles_in_most_bound_fraction,selected_particles[0])==True))
     
     selected_particles[1] = np.where(np.isin(selected_particles[0],particles_in_most_bound_fraction)==True,selected_particles[1]+stellar_mass_assigned,selected_particles[1]) 
-
-    #[idxs_previously_selected] += stellar_mass_assigned
     
     #if not selected previously, add to array
     
@@ -188,7 +177,7 @@ def assign_stars_to_particles(snapshot_stellar_mass,particles_sorted_by_te,most_
     
     selected_particles_new_masses = np.append(selected_particles[1],np.repeat(stellar_mass_assigned,how_many_not_previously_selected))
 
-    #print(np.where(np.isin(particles_sorted_by_te,selected_particles[0])==True), 'selected indicies before')
+    
     selected_particles = np.array([selected_particles_new_iords,selected_particles_new_masses])
 
     array_iords = np.append(selected_particles[0][idxs_previously_selected], particles_in_most_bound_fraction[idxs_not_previously_selected])
@@ -197,11 +186,6 @@ def assign_stars_to_particles(snapshot_stellar_mass,particles_sorted_by_te,most_
 
     updates_to_arrays = np.array([array_iords,array_masses])
 
-    #print(np.where(np.isin(particles_sorted_by_te,selected_particles[0])==True), 'selected indicies after')
-
-    #print(selected_particles[0].flatten().shape[0],'particles successfully tagged')
-
-    #print(selected_particles[0])
 
     return selected_particles,updates_to_arrays
     
