@@ -25,6 +25,13 @@ from .functions_for_angular_momentum_tagging import *
 
 def get_child_iords(halo,halo_catalog,DMOstate='fiducial'):
 
+    '''
+    
+    Given a halo object from an AHF (Amiga's Halo Finder)
+    halo catalogue, the function returns a list of dark matter and star particle id's  
+    of particles belonging to 'child' or sub-halo of the main halo. 
+    
+    '''
     children_dm = np.array([])
 
     children_st = np.array([])
@@ -74,6 +81,7 @@ def get_child_iords(halo,halo_catalog,DMOstate='fiducial'):
 pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
 
 def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_filename,AHF_centers_file=None,mergers = True,AHF_centers_supplied=False):
+    '''
     pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
     
     #used paths
@@ -83,7 +91,7 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
     pynbody_path_chimera = '/vol/ph/astro_data/shared/etaylor/CHIMERA/'
     pynbody_edge_gm =  '/vol/ph/astro_data2/shared/morkney/EDGE_GM/'
 
-    '''
+    
     Halos Available
 
     'Halo383_fiducial'
@@ -94,6 +102,7 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
     'Halo1445_RT','Halo1459_RT'
 
     '''
+    pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
     
     sims = [str(sim_name)]
 
@@ -133,62 +142,58 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
                 continue
         elif len(split)==2 and simname[-3:] == '_RT':  shortname += 'RT'
 
-        
-        if simname[-3] == 'x':
-            DMOname = 'Halo'+halonum+'_DMO_'+'Mreion'+simname[-3:]
-        
-        elif simname == "void_volume":
-            DMOname = simname 
-        
-        else:
-            DMOname = 'Halo'+halonum+'_DMO' + ('' if len(split)==2 else ('_' +  '_'.join(split[2:])))
-
-            #'Halo'+halonum+'_DMO' + ('' if len(split)==2 else ('_' +  '_'.join(split[2:]))) #if split[1]=='fiducial' else None
-        
+        DMOname = simname 
         
         # set the correct paths to data files
+        '''
         if halonum == '383':
             tangos_path  = tangos_path_chimera
             pynbody_path = pynbody_path_chimera 
         else:
             tangos_path  = tangos_path_edge
             pynbody_path = pynbody_path_edge if halonum == shortname else pynbody_edge_gm
+        '''
+
+        pynbody_path = darklight.edge.get_pynbody_path(DMOname)
         
         # get particle data at z=0 for DMO sims, if available
         if DMOname==None:
-            print('--> DMO particle does not data exists, skipping!')
+            print('--> DMO simulation with name '+DMOname+' does not exist, skipping!')
             continue
         
         # listdir returns the list of entries in a given dir path (like ls on a dir)
         # isdir check if the given dir exists
         # join creates a string consisting of the path,name,entry in dir
         # once we have this string we check to see if the word 'output' is in this string (to grab only the output snapshots)
-        if pynbody_path[-3:]=='x02':
-            print('yes!!!!!!!')
-            
-        snapshots = [ f for f in listdir(pynbody_path+DMOname) if (isdir(join(pynbody_path,DMOname,f)) and f[:6]=='output') ]
-        #snapshots = np.array([DMOsim.timesteps[i].__dict__['extension'] for i in range(len(DMOsim.timesteps))])[-len(halonums):]
+        
+        snapshots = [ f for f in listdir(pynbody_path) if (isdir(join(pynbody_path,f)) and f[:6]=='output') ]
+        
         #sort the list of snapshots in ascending order
         snapshots.sort()
         
         # load in the DMO sim to get particle data and get accurate halonums for the main halo in each snapshot
-        DMOsim,main_halo,halonums,outputs = get_the_right_halonums(DMOname,0)
+        # get_the_right_halonums loads in the tangos database 'DMOsim' and returns the main halos tangos object, outputs and halonums at all timesteps
+        # here haloidx_at_end specifies the index associated with the main halo at the last snapshot in the tangos db's halo catalogue
+
+        haloidx_at_end = 0
+        
+        DMOsim,main_halo,halonums,outputs = get_the_right_halonums(DMOname,haloidx_at_end)
+        
         print('HALONUMS:---',len(halonums), "OUTPUTS---",len(snapshots))
-        #Get stellar masses at each redshift using darklight 
+        
+        # Get stellar masses at each redshift using darklight for insitu tagging (mergers = False excludes accreted mass)
         t,redshift,vsmooth,sfh_insitu,mstar_s_insitu,mstar_total = DarkLight(main_halo,DMO=True,mergers = False, poccupied=occupation_fraction)
 
-        #calculate when the mergers took place and grab all the halo objects involved in the merger
+        #calculate when the mergers took place and grab all the tangos halo objects involved in the merger (zmerge = merger redshift, hmerge = merging halo objects,qmerge = merger ratio)
         zmerge, qmerge, hmerge = get_mergers_of_major_progenitor(main_halo)
         
-        #The redshifts and times (Gyr) of all snapshots of the given simulation
+        # The redshifts and times (Gyr) of all snapshots of the given simulation from the tangos database
         red_all = np.array([ DMOsim.timesteps[i].__dict__['redshift'] for i in range(len(DMOsim.timesteps)) ])
         t_all = np.array([ DMOsim.timesteps[i].__dict__['time_gyr'] for i in range(len(DMOsim.timesteps)) ])
 
-        #loop groups all the non-main halo objects that take part in mergers according to their merger's redshift.
-        #this array gets stored in hmerge_added in the form - len = no. of unique zmerges, 
-        # elements = all the hmerges of halos merging at this zmerge
-        AHF_centers = pd.read_csv(str(AHF_centers_file)) if AHF_centers_supplied == True else None
-
+        # group_mergers groups all merging objects by redshift.
+        # this array gets stored in hmerge_added in the form => len = no. of unique zmerges, 
+        # elements = all the hmerges of halos merging at each zmerge
         hmerge_added, z_set_vals = group_mergers(zmerge,hmerge)
 
         
@@ -206,17 +211,21 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
         # total stellar mass selected 
         mstar_selected_total = 0
 
-
-
         accreted_only_particle_ids = np.array([])
         insitu_only_particle_ids = np.array([])
 
+        # if an AHF centering file is provided use the centers stroed within it
+        AHF_centers = pd.read_csv(str(AHF_centers_file)) if AHF_centers_supplied == True else None
+        
+
         with open(particle_storage_filename, 'a') as particle_storage_file:
             
-            # looping over all snaps 
+            # looping over all snapshots  
             for i in range(len(snapshots)):
+
+                # finding out what index in the tangos output array matches the specific snapshot 
+                
                 idxout = np.asarray(np.where(outputs==snapshots[i])).flatten()
-                print('time at current snap -->',t_all[i],"Gyr")
                                 
                 if idxout.shape[0] == 0 :
                     print('no matching output found')
@@ -238,16 +247,14 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
                     print('No halos found in the tangos db at this timestep')
                     continue
             
-                
+                # loading in the main halo object at this snapshot from tangos 
                 hDMO = tangos.get_halo(DMOname+'/'+snapshots[i]+'/halo_'+str(halonums[iout]))
         
                 # value of redshift at the current timestep 
-                z_val = red_all[i]
-
-                zre = 4.0
+                z_val = red_all[iout]
                         
                 # time in gyr
-                t_val = t_all[i]
+                t_val = t_all[iout]
 
                 # 't' is the darklight time array 
                 # idrz is thus the index of the mstar value calculated at the closest time to that of the snap
@@ -287,13 +294,16 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
                     # try to load in the data from this snapshot
                     
                     try:
-                        simfn = join(pynbody_path,DMOname,snapshots[i])
+                        simfn = join(pynbody_path,snapshots[i])
+                        
                         print(simfn)
                         print('loading in DMO particles')
+                        
                         DMOparticles = pynbody.load(simfn)
                         # once the data from the snapshot has been loaded, .physical_units()
                         # converts all array’s units to be consistent with the distance, velocity, mass basis units specified.
                         DMOparticles.physical_units()
+                        
                         #print('total energy  ---------------------------------------------------->',DMOparticles['te'])
                         print('loaded data insitu')
                     
@@ -304,15 +314,17 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
            
                     print('mass_select:',mass_select)
                     #print('total energy  ---------------------------------------------------->',DMOparticles.loadable_keys())
+                    
                     iout = np.where(outputs==snapshots[i])[0][0]
+                    
                     try:
                         hDMO['r200c']
                     except:
                         print("Couldn't load in the R200 at timestep:" , i)
                         continue
-                    print('the time is:',t_all[i])
-                
                     
+                    print('the time is:',t_all[iout])
+                
                     subhalo_iords = np.array([])
                     
                     if AHF_centers_supplied==False:
@@ -348,7 +360,7 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
 
                     pynbody.analysis.halo.center(h)
 
-                    #pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
+                    pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
                                                                                                                                                                                                                    
                     try:                                                                                                                                                                                              
                         r200c_pyn = pynbody.analysis.halo.virial_radius(h.d, overden=200, r_max=None, rho_def='critical')                                                                                             
@@ -358,13 +370,13 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
                         continue                                                                                                                                                                                      
                                                                                                                                                                                     
 
-                    pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
+                    #pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
                     
                     DMOparticles = DMOparticles[sqrt(DMOparticles['pos'][:,0]**2 + DMOparticles['pos'][:,1]**2 + DMOparticles['pos'][:,2]**2) <= r200c_pyn ] #hDMO['r200c']]
 
                     #print('angular_momentum: ', DMOparticles["j"])
                     
-
+                    
                     DMOparticles_insitu_only = DMOparticles[np.logical_not(np.isin(DMOparticles['iord'],subhalo_iords))]
 
                     #DMOparticles_insitu_only = DMOparticles[np.logical_not(np.isin(DMOparticles['iord'],accreted_only_particle_ids))]
@@ -384,7 +396,7 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
                     insitu_only_particle_ids = np.append(insitu_only_particle_ids,np.asarray(array_to_write[0]))
                     
                     for particle_ids,stellar_masses in zip(array_to_write[0],array_to_write[1]):
-                        writer.writerow([particle_ids,stellar_masses,t_all[i],red_all[i],'insitu'])
+                        writer.writerow([particle_ids,stellar_masses,t_all[iout],red_all[iout],'insitu'])
                     print('insitu selection done')
                     
                     #pynbody.analysis.halo.center(h,mode='hyb').revert()
@@ -392,18 +404,22 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
                     #print('moving onto mergers loop')
                     #get mergers ----------------------------------------------------------------------------------------------------------------
                     # check whether current the snapshot has a the redshift just before the merger occurs.
-                    
-                if (((i+1<len(red_all)) and (red_all[i+1] in z_set_vals)) and (mergers == True)):
+                
+                idxout_next = np.asarray(np.where(outputs==snapshots[i+1])).flatten()
+                if idxout_next.shape[0] == 0 :
+                    print('no matching output found')
+                    continue
+                else:
+                    iout_next = np.where(outputs==snapshots[i+1])[0][0]
+                
+                if (((iout_next<len(red_all)) and (red_all[iout_next] in z_set_vals)) and (mergers == True)):
                         
                     decision2 = False if decision==True else True
 
                     decl=False
                     
-                    t_id = int(np.where(z_set_vals==red_all[i+1])[0][0])
+                    t_id = int(np.where(z_set_vals==red_all[iout_next])[0][0])
 
-                    if (t_all[i] > 4):
-                        print('reionization -------------------------------------------<<<<<<<<<<<<<<<--------------------------------')
-                
                     #print('chosen merger particles ----------------------------------------------',len(chosen_merger_particles))
                     #loop over the merging halos and collect particles from each of them
                 
@@ -502,10 +518,9 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
                             #pynbody.analysis.halo.center(h_merge,mode='hyb').revert()
                              
                             for particle_ids,stellar_masses in zip(array_to_write_accreted[0],array_to_write_accreted[1]):
-                                writer.writerow([particle_ids,stellar_masses,t_all[i],red_all[i],'accreted'])
+                                writer.writerow([particle_ids,stellar_masses,t_all[iout],red_all[iout],'accreted'])
 
                             #pynbody.analysis.halo.center(h_merge,mode='hyb').revert()
-                
                   
                             
                                     
