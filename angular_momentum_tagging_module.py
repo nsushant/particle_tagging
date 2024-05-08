@@ -81,7 +81,7 @@ def get_child_iords(halo,halo_catalog,DMOstate='fiducial'):
 pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
 
 def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_filename,AHF_centers_file=None,mergers = True,AHF_centers_supplied=False):
-    '''
+
     pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
     
     #used paths
@@ -91,6 +91,7 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
     pynbody_path_chimera = '/vol/ph/astro_data/shared/etaylor/CHIMERA/'
     pynbody_edge_gm =  '/vol/ph/astro_data2/shared/morkney/EDGE_GM/'
 
+    '''
     
     Halos Available
 
@@ -145,17 +146,17 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
         DMOname = simname 
         
         # set the correct paths to data files
-        '''
+        
         if halonum == '383':
             tangos_path  = tangos_path_chimera
             pynbody_path = pynbody_path_chimera 
         else:
             tangos_path  = tangos_path_edge
             pynbody_path = pynbody_path_edge if halonum == shortname else pynbody_edge_gm
-        '''
-
-        pynbody_path = darklight.edge.get_pynbody_path(DMOname)
         
+        
+        #pynbody_path = darklight.edge.get_pynbody_path(DMOname)
+
         # get particle data at z=0 for DMO sims, if available
         if DMOname==None:
             print('--> DMO simulation with name '+DMOname+' does not exist, skipping!')
@@ -166,7 +167,7 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
         # join creates a string consisting of the path,name,entry in dir
         # once we have this string we check to see if the word 'output' is in this string (to grab only the output snapshots)
         
-        snapshots = [ f for f in listdir(pynbody_path) if (isdir(join(pynbody_path,f)) and f[:6]=='output') ]
+        snapshots = [ f for f in listdir(join(pynbody_path,DMOname)) if (isdir(join(pynbody_path,DMOname,f)) and f[:6]=='output') ]
         
         #sort the list of snapshots in ascending order
         snapshots.sort()
@@ -177,7 +178,7 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
 
         haloidx_at_end = 0
         
-        DMOsim,main_halo,halonums,outputs = get_the_right_halonums(DMOname,haloidx_at_end)
+        DMOsim,main_halo,halonums,outputs = get_the_right_halonums(DMOname,0)
         
         print('HALONUMS:---',len(halonums), "OUTPUTS---",len(snapshots))
         
@@ -260,8 +261,15 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
                 # idrz is thus the index of the mstar value calculated at the closest time to that of the snap
                 idrz = np.argmin(abs(t - t_val))
 
-                # index of previous snap's mstar value in darklight array
-                idrz_previous = np.argmin(abs(t - t_all[i-1])) if idrz>0 else None 
+                idxout_prev = np.asarray(np.where(outputs==snapshots[i-1])).flatten()
+                if idxout_prev.shape[0] == 0 :
+                    print('no previous output found')
+                    idrz_previous = None 
+                else:
+                    iout_prev = np.where(outputs==snapshots[i-1])[0][0]
+                
+                    # index of previous snap's mstar value in darklight array
+                    idrz_previous = np.argmin(abs(t - t_all[iout_prev])) if idrz>0 else None 
 
                 # current snap's darklight calculated stellar mass 
                 msn = mstar_s_insitu[idrz]              
@@ -294,7 +302,7 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
                     # try to load in the data from this snapshot
                     
                     try:
-                        simfn = join(pynbody_path,snapshots[i])
+                        simfn = join(pynbody_path,DMOname,snapshots[i])
                         
                         print(simfn)
                         print('loading in DMO particles')
@@ -372,12 +380,12 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
 
                     #pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
                     
-                    DMOparticles = DMOparticles[sqrt(DMOparticles['pos'][:,0]**2 + DMOparticles['pos'][:,1]**2 + DMOparticles['pos'][:,2]**2) <= r200c_pyn ] #hDMO['r200c']]
+                    DMOparticles_mhalo = DMOparticles[sqrt(DMOparticles['pos'][:,0]**2 + DMOparticles['pos'][:,1]**2 + DMOparticles['pos'][:,2]**2) <= r200c_pyn ] #hDMO['r200c']]
 
                     #print('angular_momentum: ', DMOparticles["j"])
                     
                     
-                    DMOparticles_insitu_only = DMOparticles[np.logical_not(np.isin(DMOparticles['iord'],subhalo_iords))]
+                    DMOparticles_insitu_only = DMOparticles_mhalo[np.logical_not(np.isin(DMOparticles_mhalo['iord'],subhalo_iords))]
 
                     #DMOparticles_insitu_only = DMOparticles[np.logical_not(np.isin(DMOparticles['iord'],accreted_only_particle_ids))]
                     
@@ -467,7 +475,7 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
                             leftover+=mstar_merging[-1]
                             continue
                         
-                        simfn = join(pynbody_path,snapshots[i])
+                        simfn = join(pynbody_path,DMOname,snapshots[i])
 
                         if float(mass_select_merge) >0 and decision2==True:
                             # try to load in the data from this snapshot
@@ -484,14 +492,15 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
                      
                         if int(mass_select_merge) > 0:
 
-                            try:
-                                h_merge = DMOparticles.halos()[int(hDM.calculate('halo_number()'))-1]
-                                pynbody.analysis.halo.center(h_merge,mode='hyb')
-                                r200c_pyn_acc = pynbody.analysis.halo.virial_radius(h_merge.d, overden=200, r_max=None, rho_def='critical')
-                            except:
-                                print('centering data unavailable, skipping')
+                            #try:
+                            h_merge = DMOparticles.halos()[int(hDM.calculate('halo_number()'))-1]
+                            pynbody.analysis.halo.center(h_merge,mode='hyb')
+                            r200c_pyn_acc = pynbody.analysis.halo.virial_radius(h_merge.d, overden=200, r_max=None, rho_def='critical')
+                            '''
+                            except Exception as ex:
+                                print('centering data unavailable, skipping',ex)
                                 continue
-                                                                                                                       
+                            '''                                                                                        
                        
                             print('mass_select:',mass_select_merge)
                             #print('total energy  ---------------------------------------------------->',DMOparticles.loadable_keys())
