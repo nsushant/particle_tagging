@@ -223,7 +223,7 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
             
             # looping over all snapshots  
             for i in range(len(snapshots)):
-
+                gc.collect()
                 # finding out what index in the tangos output array matches the specific snapshot 
                 
                 idxout = np.asarray(np.where(outputs==snapshots[i])).flatten()
@@ -316,7 +316,8 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
                         print('loaded data insitu')
                     
                     # where this data isn't available, notify the user.
-                    except:
+                    except Exception as e:
+                        print(e)
                         print('--> DMO particle data exists but failed to read it, skipping!')
                         continue
            
@@ -336,6 +337,7 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
                     subhalo_iords = np.array([])
                     
                     if AHF_centers_supplied==False:
+                        print(int(halonums[iout])-1)
                         h = DMOparticles.halos()[int(halonums[iout])-1]
 
                     elif AHF_centers_supplied == True:
@@ -369,7 +371,8 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
                     pynbody.analysis.halo.center(h)
 
                     pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
-                                                                                                                                                                                                                   
+
+                
                     try:                                                                                                                                                                                              
                         r200c_pyn = pynbody.analysis.halo.virial_radius(h.d, overden=200, r_max=None, rho_def='critical')                                                                                             
                                                                                                                                                                                                                       
@@ -377,15 +380,16 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
                         print('could not calculate R200c')                                                                                                                                                            
                         continue                                                                                                                                                                                      
                                                                                                                                                                                     
-
+                    
+                    
                     #pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
                     
-                    DMOparticles_mhalo = DMOparticles[sqrt(DMOparticles['pos'][:,0]**2 + DMOparticles['pos'][:,1]**2 + DMOparticles['pos'][:,2]**2) <= r200c_pyn ] #hDMO['r200c']]
+                    DMOparticles_insitu_only = DMOparticles[sqrt(DMOparticles['pos'][:,0]**2 + DMOparticles['pos'][:,1]**2 + DMOparticles['pos'][:,2]**2) <= r200c_pyn ] #hDMO['r200c']]
 
                     #print('angular_momentum: ', DMOparticles["j"])
                     
                     
-                    DMOparticles_insitu_only = DMOparticles_mhalo[np.logical_not(np.isin(DMOparticles_mhalo['iord'],subhalo_iords))]
+                    DMOparticles_insitu_only = DMOparticles_insitu_only[np.logical_not(np.isin(DMOparticles_insitu_only['iord'],subhalo_iords))]
 
                     #DMOparticles_insitu_only = DMOparticles[np.logical_not(np.isin(DMOparticles['iord'],accreted_only_particle_ids))]
                     
@@ -408,12 +412,17 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
                     print('insitu selection done')
                     
                     #pynbody.analysis.halo.center(h,mode='hyb').revert()
-            
+
+                    del DMOparticles_insitu_only
+                    
                     #print('moving onto mergers loop')
                     #get mergers ----------------------------------------------------------------------------------------------------------------
                     # check whether current the snapshot has a the redshift just before the merger occurs.
-                
-                idxout_next = np.asarray(np.where(outputs==snapshots[i+1])).flatten()
+                if (i+1<len(snapshots)):
+                    idxout_next = np.asarray(np.where(outputs==snapshots[i+1])).flatten()
+                else:
+                    continue
+                                                                                          
                 if idxout_next.shape[0] == 0 :
                     print('no matching output found')
                     continue
@@ -492,15 +501,15 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
                      
                         if int(mass_select_merge) > 0:
 
-                            #try:
-                            h_merge = DMOparticles.halos()[int(hDM.calculate('halo_number()'))-1]
-                            pynbody.analysis.halo.center(h_merge,mode='hyb')
-                            r200c_pyn_acc = pynbody.analysis.halo.virial_radius(h_merge.d, overden=200, r_max=None, rho_def='critical')
-                            '''
+                            try:
+                                h_merge = DMOparticles.halos()[int(hDM.calculate('halo_number()'))-1]
+                                pynbody.analysis.halo.center(h_merge,mode='hyb')
+                                r200c_pyn_acc = pynbody.analysis.halo.virial_radius(h_merge.d, overden=200, r_max=None, rho_def='critical')
+                            
                             except Exception as ex:
                                 print('centering data unavailable, skipping',ex)
                                 continue
-                            '''                                                                                        
+                                                                                                                   
                        
                             print('mass_select:',mass_select_merge)
                             #print('total energy  ---------------------------------------------------->',DMOparticles.loadable_keys())
@@ -531,6 +540,8 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
 
                             #pynbody.analysis.halo.center(h_merge,mode='hyb').revert()
                   
+                            del DMOparticles_acc_only
+                
                             
                                     
                 if decision==True or decl==True:
@@ -851,7 +862,7 @@ def calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_file=None
                 print('masses max:', max(data_sum['masses'].values))
 
                 #print('cutoffs:',b[data_sum.index.values[np.where(data_sum['masses'].values < max(data_sum['masses'].values)/100)]])
-
+                '''
                 if min(data_sum['masses'].values) > (max(data_sum['masses'].values)/100):
                     id_minima = data_sum.index.values[np.where(data_sum['masses'].values <= min(data_sum['masses']))]
                 else:    
@@ -862,7 +873,7 @@ def calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_file=None
                 if (len(stored_reff)>0):
                     previous_halflight = stored_reff[-1]
                     particle_selection_reff_tot = particle_selection_reff_tot[np.sqrt(particle_selection_reff_tot['pos'][:,0]**2+particle_selection_reff_tot['pos'][:,1]**2+particle_selection_reff_tot['pos'][:,2]**2) <= (m_cutoff)]
-                    
+                ''' 
                 masses = [dfnew.loc[n]['mstar'] for n in particle_selection_reff_tot['iord']]
 
                 #cen_stars = calc_3D_cm(particle_selection_reff_tot,masses)
@@ -898,8 +909,8 @@ def calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_file=None
                         halfmass_radius.append(sorted_distances[d])
                 '''     
 
-                stored_reff_z = np.append(stored_reff_z,red_all[i])
-                stored_time = np.append(stored_time, t_all[i])
+                stored_reff_z = np.append(stored_reff_z,red_all[iout])
+                stored_time = np.append(stored_time, t_all[iout])
                    
                 stored_reff = np.append(stored_reff,float(R_half))
                 kravtsov = hDMO['r200c']*0.02

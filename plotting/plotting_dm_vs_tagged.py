@@ -74,25 +74,44 @@ else:
     exit()
 '''
 
+#DMOsim = darklight.edge.load_tangos_data(DMOname)
+#main_halo = DMOsim.timesteps[-1].halos[0]
+#halonums = main_halo.calculate_for_progenitors('halo_number()')[0][::-1]
+#outputs = np.array([DMOsim.timesteps[i].__dict__['extension'] for i in range(len(DMOsim.timesteps))])[-len(halonums):]
+                                
 
-p_file_name = "angular_momentum_tagging_runs/particles/ahf_corrected/Halo1459_DMO_Mreionx02_1p_m_dependent_free_param.csv"
+
+#pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
+
+p_file_name = "angular_momentum_tagging_runs/particles/Halo1459_DMO.csv"
 #'angular_momentum_tagging_runs/particles/ahf_corrected/Halo1459_DMO_Mreionx02_1p.csv'        
 
 time_requested = 14
 
-sim_name = 'Halo1459_DMO_Mreionx02'
+sim_name = 'Halo1459_DMO'
 
-sim_name_hydro = 'Halo1459_fiducial_Mreionx02'
+sim_name_hydro = 'Halo1459_fiducial'
 
-save_to_file = 'Halo1459_DMO_Mreionx02_tagging_angmom.pdf'
+save_to_file = 'dm_vs_tagged_plots/Halo1459_DMO.pdf'
 
-ahf_cen_file = 'AHF_cen_files/DMO/Halo1459_DMO_Mreionx02.csv'
+#ahf_cen_file = 'AHF_cen_files/DMO/Halo1459_DMO_Mreionx02.csv'
 
-ahf_cen_file_hydro = 'AHF_cen_files/Halo1459_fiducial_Mreionx02.csv'
+#ahf_cen_file_hydro = 'AHF_cen_files/Halo1459_fiducial_Mreionx02.csv'
 
-calculated_reffs = 'angular_momentum_tagging_runs/reffs/ahf_corrected/Halo1459_DMO_Mreionx02_1p.csv'
+calculated_reffs = 'angular_momentum_tagging_runs/reffs/Halo1459_DMO.csv'
 
 # finding output_num of time corresponding to user input 
+
+
+DMOsim = darklight.edge.load_tangos_data(sim_name)
+main_halo = DMOsim.timesteps[-1].halos[0]
+halonums = main_halo.calculate_for_progenitors('halo_number()')[0][::-1]
+outputs = np.array([DMOsim.timesteps[i].__dict__['extension'] for i in range(len(DMOsim.timesteps))])[-len(halonums):]
+
+
+
+
+
 
 
 tangos_path_edge     = '/vol/ph/astro_data/shared/morkney/EDGE/tangos/'
@@ -117,30 +136,31 @@ else:
     pynbody_path = pynbody_path_edge if halonum == shortname else pynbody_edge_gm
                                     
 
-
+'''
 if sim_name[-3] == 'x':
     DMOname = 'Halo'+halonum+'_DMO_'+'Mreion'+sim_name[-3:]
 
 else:
     DMOname = 'Halo'+halonum+'_DMO' + ('' if len(split)==2 else ('_' +  '_'.join(split[2:])))
-                        
+'''                     
 
-
+DMOname = sim_name
 
 # because the array 'valid_ids' is 0 indexed and the output array isn't
-output_number = calculate_output_number(sim_name,time_requested)
+#output_number = calculate_output_number(sim_name,time_requested)
 
-print('ouput:----->',output_number)
+#print('ouput:----->',output_number)
 #loading in the tagged particles 
 
 d = pd.read_csv(p_file_name)
-d_ahf = pd.read_csv(ahf_cen_file)
+
+#d_ahf = pd.read_csv(ahf_cen_file)
 
 dt = d[d['t'] <= time_requested].groupby(['iords']).last()
 
-print(dt.head(),dt.index.values)
+#print(dt.head(),dt.index.values)
 
-dt_ahf = d_ahf[d_ahf['i'] == int(output_number-1)]
+#dt_ahf = d_ahf[d_ahf['i'] == int(output_number-1)]
 tagged_iords = dt.index.values
 tagged_m = dt['mstar'].values
 
@@ -152,13 +172,18 @@ reff_calculated = df_reffs[df_reffs['t'] <= time_requested].iloc[-1]['reff']
 prev_reff = df_reffs[df_reffs['t'] <= time_requested].iloc[-2]['reff']
 # plotting tagged DMO particles
 
-s = darklight.edge.load_pynbody_data(sim_name,output=output_number)
+
+s = pynbody.load(os.path.join(pynbody_path,DMOname,outputs[-1]))
+#darklight.edge.load_pynbody_data(sim_name,output=output_number)
 s.physical_units()
+
 print(s.halos())
 
-h = s.halos()[int(dt_ahf['AHF catalogue id'].values)]
+#h = s.halos()[int(dt_ahf['AHF catalogue id'].values)]
 
+h = s.halos()[1]
 pynbody.analysis.halo.center(h)
+
 r200_DMO = pynbody.analysis.halo.virial_radius(h, overden=200, r_max=None, rho_def='critical')
 
 selected_parts = h.dm[np.isin(h.dm['iord'],tagged_iords)]
@@ -170,7 +195,6 @@ print(tagged_iords,selected_parts['iord'])
 idxs_m = [np.where(tagged_iords == i)[0][0] for i in selected_parts['iord']]
 
 selected_masses = [tagged_m[i] for i in idxs_m]
-
 
 
 tagged_acc = dt[dt['type']=='accreted'].index.values
@@ -204,30 +228,31 @@ data_only_insitu =pd.DataFrame({'x':selected_parts_insitu['x'],'y':selected_part
 
 cen_stars = calc_3D_cm(selected_parts_insitu,selected_masses_insitu)
 
-'''
+
 # plotting hydro particles 
 output_number_hydro = calculate_output_number(sim_name_hydro,time_requested)
 
-s_hydro = darklight.edge.load_pynbody_data(sim_name_hydro,output=output_number_hydro)
+s_hydro = darklight.edge.load_pynbody_data(sim_name_hydro)
 
 s_hydro.physical_units()
 
-d_ahf_hydro = pd.read_csv(ahf_cen_file_hydro)
+#d_ahf_hydro = pd.read_csv(ahf_cen_file_hydro)
 
-dt_ahf_hydro = d_ahf_hydro[d_ahf_hydro['i'] == int(output_number_hydro-1)]
-
-
-print('halonum hydro:',int(dt_ahf_hydro['AHF catalogue id'].values))
+#dt_ahf_hydro = d_ahf_hydro[d_ahf_hydro['i'] == int(output_number_hydro-1)]
 
 
-h_hydro = s_hydro.halos()[int(dt_ahf_hydro['AHF catalogue id'].values)]
+#print('halonum hydro:',int(dt_ahf_hydro['AHF catalogue id'].values))
 
-reff_hydro = dt_ahf_hydro['reff'].values
+
+h_hydro = s_hydro.halos()[1]
+
+#reff_hydro = dt_ahf_hydro['reff'].values
+
 
 pynbody.analysis.halo.center(h_hydro)
 
 stars = h_hydro.st
-'''
+
 
 # new cutoff testing
 distances = np.sqrt(data_all_tagged['x']**2+data_all_tagged['y']**2)
@@ -243,7 +268,8 @@ masses = np.asarray(data_all_tagged['masses'].values)[sorted_idxs]
 
 b = np.linspace(0,r200_DMO,num=50)
 
-print(b)
+
+print(stars['mass'],'<--mass array')
 
 
 bins_digi = np.digitize(distances,bins=b)-1
@@ -262,11 +288,11 @@ loc_minima = np.array([])
 id_minima = data_sum.index.values[(loc_minima+1)]
 '''
 
-id_minima = data_sum.index.values[np.where(data_sum['masses'].values < max(data_sum['masses'].values)/100)]
+#id_minima = data_sum.index.values[np.where(data_sum['masses'].values < max(data_sum['masses'].values)/100)]
 
-m_cutoff = min(b[id_minima]) 
+#m_cutoff = min(b[id_minima]) 
 
-#data_all_stars = pd.DataFrame({'x':stars['x'],'y':stars['y'], 'masses':np.asarray(stars['mass'])})
+data_all_stars = pd.DataFrame({'x':stars['x'],'y':stars['y'], 'masses':np.asarray(stars['mass'])})
 
 #print(data_all_stars)
 
@@ -295,7 +321,7 @@ sns.kdeplot(data = data_all_tagged, x='x',y='y',weights='masses',fill=True,cmap=
 #sns.kdeplot(data = data_all_tagged, x='x',y='y',weights='masses',fill=False)
 
 
-#plt.scatter(data_all_stars['x'],data_all_stars['y'],s=0.001,alpha=data_all_stars['masses'].values/max(data_all_stars['masses'].values),color='red')
+plt.scatter(data_all_stars['x'],data_all_stars['y'],s=0.001,alpha=data_all_stars['masses'].values/max(data_all_stars['masses'].values),color='red')
 
 
 circle_reff = Circle(xy=(0,0), radius=reff_calculated, fill=False,color="white")
@@ -304,7 +330,7 @@ circle_reff = Circle(xy=(0,0), radius=reff_calculated, fill=False,color="white")
 
 
 
-cutoff_m = Circle(xy=(0,0),radius=m_cutoff, fill=False,color="blue")
+#cutoff_m = Circle(xy=(0,0),radius=m_cutoff, fill=False,color="blue")
 
 
 ax = plt.gca()
@@ -313,10 +339,11 @@ ax.add_patch(circle_reff)
 
 #ax.add_patch(circle_hydro_reff)
 
-ax.add_patch(cutoff_m)
+#ax.add_patch(cutoff_m)
 
 #ax.add_patch(circle_cutoff)
-
+plt.xlim(4,-4)
+plt.ylim(4,-4)
 
 
 
@@ -324,7 +351,7 @@ ax.add_patch(cutoff_m)
 #sns.kdeplot(data = data_only_acc_tagged, x='x',y='y',weights='masses',fill=True)
 
 
-plt.scatter(cen_stars[0],cen_stars[1],s=0.001,label='Stellar Center')
+#plt.scatter(cen_stars[0],cen_stars[1],s=0.001,label='Stellar Center')
 
 
 
