@@ -210,6 +210,19 @@ print('max selected masses ',max(selected_masses))
 
 data_all_tagged = pd.DataFrame({'x':selected_parts['x'],'y':selected_parts['y'], 'masses':np.asarray(selected_masses)})
 
+
+
+
+dataframe_for_hist = pd.DataFrame({'r':np.sqrt(selected_parts['x']**2+selected_parts['y']**2+selected_parts['z']**2), 'masses':np.asarray(selected_masses)})
+
+
+dataframe_for_hist = dataframe_for_hist.sort_values(by=['r'])
+
+dataframe_for_hist['m_enclosed'] = np.cumsum(dataframe_for_hist['masses'].values)
+
+
+
+
 data_only_acc_tagged = pd.DataFrame({'x':selected_parts_acc['x'],'y':selected_parts_acc['y'],'masses':np.asarray(selected_masses_acc)})
 
 
@@ -294,6 +307,8 @@ id_minima = data_sum.index.values[(loc_minima+1)]
 
 data_all_stars = pd.DataFrame({'x':stars['x'],'y':stars['y'], 'masses':np.asarray(stars['mass'])})
 
+#plt.hist(dataframe_for_hist['r'].values,bins=50,weights=dataframe_for_hist['masses'].values)
+
 #print(data_all_stars)
 
 #plotting
@@ -311,7 +326,11 @@ data_all_stars = pd.DataFrame({'x':stars['x'],'y':stars['y'], 'masses':np.asarra
 
 #plt.scatter(data_all_stars['x'],data_all_stars['y'],s=0.001,color='red')  
 
-sns.kdeplot(data = data_all_tagged, x='x',y='y',weights='masses',fill=True,cmap="rocket")
+
+
+plt.gca().set_box_aspect(1)
+
+sns.kdeplot(data = data_all_tagged, x='x',y='y',weights='masses',fill=True,cmap="viridis")
 
 
 #,cbar=True)
@@ -320,8 +339,10 @@ sns.kdeplot(data = data_all_tagged, x='x',y='y',weights='masses',fill=True,cmap=
 
 #sns.kdeplot(data = data_all_tagged, x='x',y='y',weights='masses',fill=False)
 
+sns.kdeplot(data = data_all_stars,x ='x',y='y', weights='masses',fill=False,color='white')
 
-plt.scatter(data_all_stars['x'],data_all_stars['y'],s=0.001,alpha=data_all_stars['masses'].values/max(data_all_stars['masses'].values),color='red')
+
+#plt.scatter(data_all_stars['x'],data_all_stars['y'],s=0.001,alpha=data_all_stars['masses'].values/max(data_all_stars['masses'].values),color='red')
 
 
 circle_reff = Circle(xy=(0,0), radius=reff_calculated, fill=False,color="white")
@@ -333,9 +354,8 @@ circle_reff = Circle(xy=(0,0), radius=reff_calculated, fill=False,color="white")
 #cutoff_m = Circle(xy=(0,0),radius=m_cutoff, fill=False,color="blue")
 
 
-ax = plt.gca()
-
-ax.add_patch(circle_reff)
+plt.title('Rhalf = '+str(round(reff_calculated,3)))
+#plt.gca().add_patch(circle_reff)
 
 #ax.add_patch(circle_hydro_reff)
 
@@ -346,6 +366,24 @@ plt.xlim(4,-4)
 plt.ylim(4,-4)
 
 
+
+'''
+plt.plot(dataframe_for_hist['r'].values,dataframe_for_hist['m_enclosed'].values)
+#plt.hist(dataframe_for_hist['r'].values,bins=50,weights=dataframe_for_hist['masses'].values)
+plt.yscale('log')
+
+plt.xlim(0,1)
+
+
+plt.yscale('log')
+
+plt.xlim(0,r200_DMO)
+
+
+plt.title('Halo1459')
+plt.ylabel('Mass in $M_{\odot}$')
+plt.xlabel('Radial Distance in Kpc')
+'''
 
 #plt.colorbar()
 #sns.kdeplot(data = data_only_acc_tagged, x='x',y='y',weights='masses',fill=True)
