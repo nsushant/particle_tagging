@@ -203,48 +203,28 @@ def tag_particles(sim_name_input,occupation_fraction,filename_for_run):
                 continue
             
             # value of redshift at the current timestep
-            z_val = red_all[i]
-            t_val = t_all[i]
+            z_val = red_all[iout]
+            t_val = t_all[iout]
             #round each value in the redhsifts list from DarkLight to 6 decimal places
             np_round_to_4 = np.round(np.array(abs(redshift)), 6)
-            '''
-            #get the index at which the redshift of the snapshot is stored in the DarkLight array
-            idrz =(np.where(np_round_to_4==np.round(abs(z_val),6))[0])
-            UNDEFINED_insitu = -9999
-           
-            # Using the index obtained above, get the value of mstar_insitu at this redshift
-            msn = mstar_s_insitu[idrz] if len(idrz)>0 else []
-            '''
+          
             #for the given path,entry,snapshot at given index generate a string that includes them
             simfn = join(pynbody_path,DMOname,snapshots[i])
 
-            
-            #r200 = hDMO['r200c']
-            
-
-            #a_check = plum_const(hDMO,z_val,'insitu',r200)
-
-
-            #a_coeff = np.append(a_coeff,a_check)
-            
-            # (msp = previous stellar mass, msn = stellar mass now)
-            
-            #if (len(redshift)>0) and (abs(redshift[idrz-1]-redshift[idrz])<0.1):
-             #   msp = mstar_s_insitu[idrz-2]
-            ''' 
-            if len(msn)!=0:
-                if idrz==0:
-                    msp=0
-                elif idrz>=1:
-                    msp = mstar_s_insitu[idrz-1]
-            else:
-                print('msp was not properly assigned xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
-                continue
-            '''
             idrz = np.argmin(abs(t - t_val))
 
-            idrz_previous = np.argmin(abs(t - t_all[i-1])) if idrz>0 else None
+            idxout_prev = np.asarray(np.where(outputs==snapshots[i-1])).flatten()
+            
+            if idxout_prev.shape[0] == 0 :
+                print('no previous output found')
+                idrz_previous = None 
+            else:
+                iout_prev = np.where(outputs==snapshots[i-1])[0][0]
+                
+                # index of previous snap's mstar value in darklight array
+                idrz_previous = np.argmin(abs(t - t_all[iout_prev])) if idrz>0 else None 
 
+            
             msn = mstar_s_insitu[idrz]
 
             #get the index at which the redshift of the snapshot is stored in the DarkLight array
@@ -259,8 +239,6 @@ def tag_particles(sim_name_input,occupation_fraction,filename_for_run):
                 continue
                 
                 
-                
-            #UNDEFINED_insitu = -9999
 
             # Using the index obtained in idrz get the value of mstar_insitu at this redshift
 
@@ -331,8 +309,21 @@ def tag_particles(sim_name_input,occupation_fraction,filename_for_run):
                 del binned_df
             
             #get mergers ----------------------------------------------------------------------------------------------------------------
+            
+            if (i+1<len(snapshots)):
+                idxout_next = np.asarray(np.where(outputs==snapshots[i+1])).flatten()
+                
+            else:
+                continue
+                                                                                          
+            if idxout_next.shape[0] == 0 :
+                print('no matching output found')
+                continue
+            else:
+                iout_next = np.where(outputs==snapshots[i+1])[0][0]
+                
             # check whether current the snapshot has a the redshift just before the merger occurs.
-            if i+1<len(red_all) and red_all[i+1] in z_set_vals:
+            if (((iout_next<len(red_all)) and (red_all[iout_next] in z_set_vals)) and (mergers == True)):
                 
                 #if particles have already been loaded in, loading them in again is not required
                 decision2 = False if decision==True else True
@@ -344,7 +335,7 @@ def tag_particles(sim_name_input,occupation_fraction,filename_for_run):
                 
                 # the index where the merger's redshift matches the redshift of the snapshot
                 # we perform the selection one redhshift after - so that the accretion has definately taken place
-                t_id = int(np.where(z_set_vals==red_all[i+1])[0][0])
+                t_id = int(np.where(z_set_vals==red_all[iout_next])[0][0])
                 
                 print('chosen merger particles ----------------------------------------------',len(chosen_merger_particles))
                 
@@ -355,7 +346,7 @@ def tag_particles(sim_name_input,occupation_fraction,filename_for_run):
                     print('halo:',hDM)
 
                     try:
-                        prob_occupied =calculate_poccupied(hDM,occupation_fraction)
+                        prob_occupied = calculate_poccupied(hDM,occupation_fraction)
                         
                     except:
                         print("poccupied couldn't be calculated")
@@ -414,7 +405,7 @@ def tag_particles(sim_name_input,occupation_fraction,filename_for_run):
                         except:
                             continue
 
-                        a_accreted_check = plum_const(hDM,red_all[i],'accreted',r200_merge)
+                        a_accreted_check = plum_const(hDM,red_all[iout],'accreted',r200_merge)
                         
                         accreted_particles_within_selection_distance = DMOparticles[sqrt(DMOparticles['pos'][:,0]**2 + DMOparticles['pos'][:,1]**2 + DMOparticles['pos'][:,2]**2) <= 10*a_accreted_check ]
                         
@@ -426,7 +417,7 @@ def tag_particles(sim_name_input,occupation_fraction,filename_for_run):
                         #binned_df, bins,a,a_coeff,selection_mass = prod_binned_df(z_val, msn,mass_select,chosen_parts,DMOparticles,hDMO,'insitu',a_coeff,r200)
                                         
                         # Bin the particles of merging halo
-                        binned_df_merger,bins_merge,a_merge,ignored_array,sm_mer = prod_binned_df(red_all[i], mstar_merging, mstar_merging[-1], chosen_parts, DMOparticles, hDM,'accreted',np.array([]),r200_merge)
+                        binned_df_merger,bins_merge,a_merge,ignored_array,sm_mer = prod_binned_df(red_all[iout], mstar_merging, mstar_merging[-1], chosen_parts, DMOparticles, hDM,'accreted',np.array([]),r200_merge)
                         
                         # choose particles from each bin as decided by the plummer profile
                         choose_parts_merger,output_num_merge,tgyr_of_choice_merge,r_of_choice_merge,p_typ_merge,a_storage_merge,m_storage_merge = get_bins(bins_merge, binned_df_merger, mstar_merging[-1], a_merge,np.array([]), 0, red_all, t_all, i, 'accreted',sm_mer)
@@ -574,20 +565,28 @@ def calculate_reffs(sim_name, particles_tagged,reffs_fname,from_file = False,fro
         # isdir check if the given dir exists
         # join creates a string consisting of the path,name,entry in dir
         # once we have this string we check to see if the word 'output' is in this string (to grab only the output snapshots)
+        '''
         sim = darklight.edge.load_tangos_data(DMOname)
         main_halo = sim.timesteps[-1].halos[0]
         halonums = main_halo.calculate_for_progenitors('halo_number()')[0][::-1]
         outputs = np.array([sim.timesteps[i].__dict__['extension'] for i in range(len(sim.timesteps))])[-len(halonums):]
         print(outputs)
         snapshots = [ f for f in listdir(pynbody_path+DMOname) if (isdir(join(pynbody_path,DMOname,f)) and f[:6]=='output') ]
+        '''
         #fname = 'LogBinsExperiment'
         fname = 'particles_old_relation_'
-        #sort the list of snapshots in ascending order
-        snapshots.sort()
+     
         ## the for loop should run from here
 
         tangos.core.init_db(tangos_path+'Halo'+halonum+'.db')
         DMOsim = tangos.get_simulation('Halo'+halonum+'_DMO')
+        main_halo = DMOsim.timesteps[-1].halos[0]
+        halonums = main_halo.calculate_for_progenitors('halo_number()')[0][::-1]
+        outputs = np.array([DMOsim.timesteps[i].__dict__['extension'] for i in range(len(DMOsim.timesteps))])[-len(halonums):]
+        snapshots = [ f for f in listdir(pynbody_path+DMOname) if (isdir(join(pynbody_path,DMOname,f)) and f[:6]=='output') ]
+        #sort the list of snapshots in ascending order
+        snapshots.sort()
+        
         Hsim = tangos.get_simulation('Halo'+halonum+'_fiducial')
         #t,redshift,vsmooth,mstar_s_insitu = darklight.DarkLight(DMOsim.timesteps[-1].halos[0],mergers=False,DMO=True)
         thalo = Hsim.timesteps[-1].halos[0]
@@ -610,15 +609,22 @@ def calculate_reffs(sim_name, particles_tagged,reffs_fname,from_file = False,fro
         for i in range(len(snapshots)):
 
             gc.collect()
-
+            idout = np.where(outputs==snapshots[i])[0]
+            # if the output corresponding to this snap is found, execute the following
+            if len(idout)!=0:
+                iout = np.where(outputs==snapshots[i])[0][0]
+            else:
+                print('No matching output found')
+                continue
+                
             if len(np.where(data_redshift>=red_all[i]))==0:
                 continue
             
-            selected_iords_tot = np.array(data_particles['iords'][data_particles['z']>=red_all[i]])
+            selected_iords_tot = np.array(data_particles['iords'][data_particles['z']>=red_all[iout]])
 
-            selected_iords_insitu = np.array(data_particles['iords'][data_particles['z']>=red_all[i]][data_particles['type']=='insitu'])
+            selected_iords_insitu = np.array(data_particles['iords'][data_particles['z']>=red_all[iout]][data_particles['type']=='insitu'])
 
-            selected_iords_acc = np.array(data_particles['iords'][data_particles['z']>=red_all[i]][ data_particles['type']=='accreted'])
+            selected_iords_acc = np.array(data_particles['iords'][data_particles['z']>=red_all[iout]][ data_particles['type']=='accreted'])
             #get the main halo object at the given timestep if its not available then inform the user.
             if len(DMOsim.timesteps[i].halos[:])==0:
                 print('No halos!')
@@ -636,8 +642,10 @@ def calculate_reffs(sim_name, particles_tagged,reffs_fname,from_file = False,fro
             simfn = join(pynbody_path,DMOname,snapshots[i])
         
             # try to load in the data from this snapshot
-            try:  DMOparticles = pynbody.load(simfn)
-
+            try:  
+                DMOparticles = pynbody.load(simfn)
+           
+                
             # where this data isn't available, notify the user.
             except:
                 print('--> DMO particle data exists but failed to read it, skipping!')
@@ -672,8 +680,8 @@ def calculate_reffs(sim_name, particles_tagged,reffs_fname,from_file = False,fro
             
                     stored_reff_acc = np.append(stored_reff_acc,effective_radius_acc)
                     stored_reff = np.append(stored_reff,np.nan)
-                    stored_reff_z = np.append(stored_reff_z,red_all[i])
-                    stored_time = np.append(stored_time, time_all[i])
+                    stored_reff_z = np.append(stored_reff_z,red_all[iout])
+                    stored_time = np.append(stored_time, time_all[iout])
                     stored_reff_tot = np.append(stored_reff_tot,effective_radius_acc)
                     kravtsov = hDMO['r200c']*0.02
                     kravtsov_r = np.append(kravtsov_r,kravtsov)
