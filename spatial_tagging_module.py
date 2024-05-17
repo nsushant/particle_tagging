@@ -290,7 +290,7 @@ def tag_particles(sim_name_input,occupation_fraction,filename_for_run):
                 #chaged M_0!!! 
                 binned_df, bins,a,a_coeff,selection_mass = prod_binned_df(z_val, msn,mass_select,chosen_parts,DMOparticles,hDMO,'insitu',a_coeff,r200)
                 ## perform the selection for each bin
-                choose_parts,output_num,tgyr_of_choice,r_of_choice,p_typ,a_storage,m_storage = get_bins(bins, binned_df, mass_select, a, a_coeff, msp,red_all,t_all,i,'insitu',selection_mass)
+                choose_parts,output_num,tgyr_of_choice,r_of_choice,p_typ,a_storage,m_storage = get_bins(bins, binned_df, mass_select, a, a_coeff, msp,red_all,t_all,iout,'insitu',selection_mass)
                 
                 if len(choose_parts)>0:
                         
@@ -420,7 +420,7 @@ def tag_particles(sim_name_input,occupation_fraction,filename_for_run):
                         binned_df_merger,bins_merge,a_merge,ignored_array,sm_mer = prod_binned_df(red_all[iout], mstar_merging, mstar_merging[-1], chosen_parts, DMOparticles, hDM,'accreted',np.array([]),r200_merge)
                         
                         # choose particles from each bin as decided by the plummer profile
-                        choose_parts_merger,output_num_merge,tgyr_of_choice_merge,r_of_choice_merge,p_typ_merge,a_storage_merge,m_storage_merge = get_bins(bins_merge, binned_df_merger, mstar_merging[-1], a_merge,np.array([]), 0, red_all, t_all, i, 'accreted',sm_mer)
+                        choose_parts_merger,output_num_merge,tgyr_of_choice_merge,r_of_choice_merge,p_typ_merge,a_storage_merge,m_storage_merge = get_bins(bins_merge, binned_df_merger, mstar_merging[-1], a_merge,np.array([]), 0, red_all, t_all, iout, 'accreted',sm_mer)
 
                         # if particles are choosen
                         if len(choose_parts_merger)>0:
