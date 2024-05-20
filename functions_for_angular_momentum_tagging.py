@@ -61,12 +61,13 @@ def get_the_right_halonums(DMOname,halo):
         times_tangos = np.array([ DMOsim.timesteps[i].__dict__['time_gyr'] for i in range(len(DMOsim.timesteps)) ])
 
         valid_outputs = outputs[np.isin(times_tangos,times_valid)]
-        
+
+        valid_tangos_timesteps = np.arange(len(DMOsim.timesteps))[np.isin(times_tangos,times_valid)]
         valid_outputs.sort()
         
         print(valid_outputs)
 
-        return DMOsim, main_halo, halonums, valid_outputs
+        return DMOsim, main_halo, halonums, valid_outputs,valid_tangos_timesteps
 
     else: 
         DMOsim = darklight.edge.load_tangos_data(DMOname,machine='astro')
@@ -80,9 +81,10 @@ def get_the_right_halonums(DMOname,halo):
         valid_outputs = outputs[np.isin(times_tangos,times_valid)]
         
         valid_outputs.sort()
-        
+
+        valid_tangos_timesteps = np.arange(len(DMOsim.timesteps))[np.isin(times_tangos,times_valid)]
         #snapshots = [ f for f in listdir(pynbody_path+DMOname) if (isdir(join(pynbody_path,DMOname,f)) and f[:6]=='output') ]
-        return DMOsim, main_halo, halonums, valid_outputs
+        return DMOsim, main_halo, halonums, valid_outputs , valid_tangos_timesteps
 
 
 
