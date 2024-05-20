@@ -55,18 +55,34 @@ def get_the_right_halonums(DMOname,halo):
         print(main_halo.calculate('halo_number()'),main_halo)
         halonums = main_halo.calculate_for_progenitors('halo_number()')[0][::-1]
         print(halonums)
-        outputs = np.array([DMOsim.timesteps[i].__dict__['extension'] for i in range(len(DMOsim.timesteps))])[-len(halonums):]
-        print(outputs)
+        times_valid = main_halo.calculate_for_progenitors('t()')[0][::-1]
+        
+        outputs = np.array([DMOsim.timesteps[i].__dict__['extension'] for i in range(len(DMOsim.timesteps))])
+        times_tangos = np.array([ DMOsim.timesteps[i].__dict__['time_gyr'] for i in range(len(DMOsim.timesteps)) ])
 
-        return DMOsim, main_halo, halonums, outputs
+        valid_outputs = outputs[np.isin(times_tangos,times_valid)]
+        
+        valid_outputs.sort()
+        
+        print(valid_outputs)
+
+        return DMOsim, main_halo, halonums, valid_outputs
 
     else: 
         DMOsim = darklight.edge.load_tangos_data(DMOname,machine='astro')
         main_halo = DMOsim.timesteps[-1].halos[0]
         halonums = main_halo.calculate_for_progenitors('halo_number()')[0][::-1]
-        outputs = np.array([DMOsim.timesteps[i].__dict__['extension'] for i in range(len(DMOsim.timesteps))])[-len(halonums):]
+        times_valid = main_halo.calculate_for_progenitors('t()')[0][::-1]
+        
+        outputs = np.array([DMOsim.timesteps[i].__dict__['extension'] for i in range(len(DMOsim.timesteps))])
+        times_tangos = np.array([ DMOsim.timesteps[i].__dict__['time_gyr'] for i in range(len(DMOsim.timesteps)) ])
+
+        valid_outputs = outputs[np.isin(times_tangos,times_valid)]
+        
+        valid_outputs.sort()
+        
         #snapshots = [ f for f in listdir(pynbody_path+DMOname) if (isdir(join(pynbody_path,DMOname,f)) and f[:6]=='output') ]
-        return DMOsim, main_halo, halonums, outputs
+        return DMOsim, main_halo, halonums, valid_outputs
 
 
 
