@@ -249,7 +249,6 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
                 # idrz is thus the index of the mstar value calculated at the closest time to that of the snap
                 idrz = np.argmin(abs(t - t_val))
 
-              
                 
                 # index of previous snap's mstar value in darklight array
                 idrz_previous = np.argmin(abs(t - t_all[i-1])) if idrz>0 else None 
@@ -612,10 +611,16 @@ def calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_file=None
         # isdir check if the given dir exists
         # join creates a string consisting of the path,name,entry in dir
         # once we have this string we check to see if the word 'output' is in this string (to grab only the output snapshots)
+        '''
         DMOsim = darklight.edge.load_tangos_data(DMOname)
         main_halo = DMOsim.timesteps[-1].halos[0]
         halonums = main_halo.calculate_for_progenitors('halo_number()')[0][::-1]
-        outputs = np.array([DMOsim.timesteps[i].__dict__['extension'] for i in range(len(DMOsim.timesteps))])[-len(halonums):]
+        valid_times = main_halo.calculate_for_progenitors('t()')[0][::-1]
+        '''
+        
+        DMOsim,main_halo,halonums,outputs = get_the_right_halonums(DMOname,0)
+        
+        #outputs = np.array([DMOsim.timesteps[i].__dict__['extension'] for i in range(len(DMOsim.timesteps))])[-len(halonums):]
 
         print(outputs)
         
@@ -626,10 +631,14 @@ def calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_file=None
         snapshots.sort()
 
         
-        red_all = np.array([DMOsim.timesteps[i].__dict__['redshift'] for i in range(len(DMOsim.timesteps)) ])
-        t_all = np.array([DMOsim.timesteps[i].__dict__['time_gyr'] for i in range(len(DMOsim.timesteps)) ])
+        red_all =  main_halo.calculate_for_progenitors('z()')[0][::-1]
+        #np.array([DMOsim.timesteps[i].__dict__['redshift'] for i in range(len(DMOsim.timesteps)) ])
+        t_all =  main_halo.calculate_for_progenitors('t()')[0][::-1]
+        #np.array([DMOsim.timesteps[i].__dict__['time_gyr'] for i in range(len(DMOsim.timesteps)) ])
 
         #load in the two files containing the particle data
+        if ( len(red_all) != len(outputs) ) : 
+            print('output array length does not match redshift and time arrays')
 
         data_particles = pd.read_csv(particles_tagged)
 
@@ -648,7 +657,7 @@ def calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_file=None
 
         AHF_centers = pd.read_csv(str(AHF_centers_file)) if AHF_centers_supplied == True else None
                 
-        for i in range(len(snapshots)):
+        for i in range(len(outputs)):
 
             gc.collect()
 
@@ -694,27 +703,13 @@ def calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_file=None
             #selected_iords_acc = np.array(data_particles['iords'][data_particles['z']>=red_all[i]][ data_particles['type']=='accreted'])
             #get the main halo object at the given timestep if its not available then inform the user.
 
-            if len(DMOsim.timesteps[i].halos[:])==0:
-                print('No halos!')
-                continue
-
-            elif len(np.where(outputs==snapshots[i])[0])>0 :
+           
+            hDMO = tangos.get_halo(DMOname+'/'+outputs[i]+'/halo_'+str(halonums[i]))
                 
-                print(np.where(outputs==snapshots[i])[0])
+            print(hDMO)
                 
-                iout = np.where(outputs==snapshots[i])[0][0]
-                hDMO = tangos.get_halo(DMOname+'/'+snapshots[i]+'/halo_'+str(halonums[iout]))
-                
-                print(hDMO)
-                
-                #hDMO =DMOsim.timesteps[i].halos[0]
-
-            else:
-                print('Snap not found in outputs --------------------------------------- ')
-                continue
-
             #for  the given path,entry,snapshot at given index generate a string that includes them
-            simfn = join(pynbody_path,DMOname,snapshots[i])
+            simfn = join(pynbody_path,DMOname,outputs[i])
             
             # try to load in the data from this snapshot
             try:  DMOparticles = pynbody.load(simfn)
@@ -732,7 +727,7 @@ def calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_file=None
 
             try:
                 if AHF_centers_supplied==False:
-                    h = DMOparticles.halos()[int(halonums[iout])-1]
+                    h = DMOparticles.halos()[int(halonums[i])-1]
                     
                 elif AHF_centers_supplied == True:
                     pynbody.config["halo-class-priority"] = [pynbody.halo.ahf.AHFCatalogue]
@@ -880,8 +875,8 @@ def calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_file=None
                         halfmass_radius.append(sorted_distances[d])
                 '''     
 
-                stored_reff_z = np.append(stored_reff_z,red_all[iout])
-                stored_time = np.append(stored_time, t_all[iout])
+                stored_reff_z = np.append(stored_reff_z,red_all[i])
+                stored_time = np.append(stored_time, t_all[i])
                    
                 stored_reff = np.append(stored_reff,float(R_half))
                 kravtsov = hDMO['r200c']*0.02
