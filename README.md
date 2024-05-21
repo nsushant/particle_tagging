@@ -1,4 +1,7 @@
 
+##Particle Tagging Package
+
+
 <img width="1183" alt="image" src="https://github.com/nsushant/particle_tagging_package/assets/64201587/9cd0684d-7a8f-4015-b329-4456a1f3c27b">
 
 This is a particle tagging package that assigns stellar mass to particles in dark matter only simulations. The primary aim of the project is to accurately reproduce the sizes and stellar mass distributions of dwarf galaxies. 
