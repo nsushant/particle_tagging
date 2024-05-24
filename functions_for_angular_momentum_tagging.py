@@ -134,7 +134,7 @@ def plum_const(hDMO,z_val,insitu):
 
 #prod_binned
 
-def rank_order_particles_by_angmom(DMOparticles, hDMO, centering=True):
+def rank_order_particles_by_angmom(DMOparticles, hDMO):
     
     print('this is how many DMOparticles were passed',len(DMOparticles))
     
