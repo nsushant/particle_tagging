@@ -374,7 +374,7 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
                     #DMOparticles_insitu_only = DMOparticles[np.logical_not(np.isin(DMOparticles['iord'],accreted_only_particle_ids))]
                     
                     
-                    particles_sorted_by_angmom = rank_order_particles_by_angmom( DMOparticles_insitu_only, hDMO, centering=False)
+                    particles_sorted_by_angmom = rank_order_particles_by_angmom( DMOparticles_insitu_only, hDMO)
                     
                     if particles_sorted_by_angmom.shape[0] == 0:
                         continue
@@ -490,7 +490,7 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
                             #DMOparticles_acc_only = DMOparticles[np.logical_not(np.isin(DMOparticles['iord'],insitu_only_particle_ids))]
                                                     
                             try:
-                                accreted_particles_sorted_by_angmom = rank_order_particles_by_angmom(DMOparticles_acc_only, hDM, centering=False)
+                                accreted_particles_sorted_by_angmom = rank_order_particles_by_angmom(DMOparticles_acc_only, hDM)
                             except:
                                 continue
                             
