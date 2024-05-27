@@ -327,11 +327,13 @@ data_all_stars = pd.DataFrame({'x':stars['x'],'y':stars['y'], 'masses':np.asarra
 #plt.scatter(data_all_stars['x'],data_all_stars['y'],s=0.001,color='red')  
 
 
+levels_array = np.linspace(1,100,8)/100
 
 plt.gca().set_box_aspect(1)
 
-sns.kdeplot(data = data_all_tagged, x='x',y='y',weights='masses',fill=True,cmap="viridis")
 
+
+sns.kdeplot(data = data_all_tagged, x='x',y='y',weights='masses',fill=True,cmap="viridis",levels=5)
 
 #,cbar=True)
 
@@ -339,11 +341,10 @@ sns.kdeplot(data = data_all_tagged, x='x',y='y',weights='masses',fill=True,cmap=
 
 #sns.kdeplot(data = data_all_tagged, x='x',y='y',weights='masses',fill=False)
 
-sns.kdeplot(data = data_all_stars,x ='x',y='y', weights='masses',fill=False,color='white')
+sns.kdeplot(data = data_all_stars,x ='x',y='y', weights='masses',fill=False,color='white',levels=5)
 
 
 #plt.scatter(data_all_stars['x'],data_all_stars['y'],s=0.001,alpha=data_all_stars['masses'].values/max(data_all_stars['masses'].values),color='red')
-
 
 circle_reff = Circle(xy=(0,0), radius=reff_calculated, fill=False,color="white")
 
