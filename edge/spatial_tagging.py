@@ -306,15 +306,17 @@ def tag_particles(sim_name_input,occupation_fraction,filename_for_run,mergers=Tr
                     gc.collect()
                     print('halo:',hDM)
 
-                    try:
-                        prob_occupied = calculate_poccupied(hDM,occupation_fraction)
+                    if (np.isin('dm_mass_profile',hDM.keys())):
                         
-                    except Exception as poccupied_error:
+                        prob_occupied = calculate_poccupied(hDM,occupation_fraction)
+                        print('successfully calculated poccupied')
+                        
+                    else:
                         print("poccupied couldn't be calculated -->",poccupied_error)
                         continue
                     
                     if (np.random.random() > prob_occupied):
-                        print('successfully calculated poccupied')
+                        print('skipped in accordance with occupation fraction selected')
                         continue
                                                                                                                                                                             
                     try:
