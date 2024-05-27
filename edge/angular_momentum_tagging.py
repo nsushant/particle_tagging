@@ -21,7 +21,7 @@ from tangos.examples.mergers import *
 import random
 import sys
 import pandas as pd
-from particle_tagging_package.tagging_functions.angular_momentum_tagging import *
+from particle_tagging_package.tagging.angular_momentum_tagging import *
 
 def get_child_iords(halo,halo_catalog,DMOstate='fiducial'):
 
@@ -367,7 +367,6 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
                     DMOparticles_insitu_only = DMOparticles[sqrt(DMOparticles['pos'][:,0]**2 + DMOparticles['pos'][:,1]**2 + DMOparticles['pos'][:,2]**2) <= r200c_pyn ] #hDMO['r200c']]
 
                     #print('angular_momentum: ', DMOparticles["j"])
-                    
                     
                     DMOparticles_insitu_only = DMOparticles_insitu_only[np.logical_not(np.isin(DMOparticles_insitu_only['iord'],subhalo_iords))]
 

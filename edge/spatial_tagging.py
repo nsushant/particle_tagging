@@ -22,7 +22,7 @@ from tangos.examples.mergers import *
 import random
 import sys
 import pandas as pd
-from particle_tagging_package.tagging_functions.spatial_tagging import *
+from particle_tagging_package.tagging.spatial_tagging import *
 
 
 def help():
