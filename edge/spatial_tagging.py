@@ -312,7 +312,7 @@ def tag_particles(sim_name_input,occupation_fraction,filename_for_run,mergers=Tr
                         print('successfully calculated poccupied')
                         
                     else:
-                        print("poccupied couldn't be calculated -->",poccupied_error)
+                        print("poccupied couldn't be calculated --> dm mass profile unavailable in tangos db")
                         continue
                     
                     if (np.random.random() > prob_occupied):
