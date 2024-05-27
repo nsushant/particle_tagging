@@ -12,20 +12,6 @@ def initialize_arrays(n):
         
     return x
 
-def rhalf2D_dm(particles):
-    #Calculate radius that encloses half the given particles.
-
-    #Assumes each particle positions have been centered on main halo.  Adopts
-    #same 'luminosity' for each particle.  Creates list of projected distances
-    #from halo center (as seen from the z-axis), sorts this to get the distances
-    #in increasing order, then choses the distance that encloses half the particles.
-
-    rproj = np.sqrt(particles['x']**2 + particles['y']**2)
-    rproj.sort()
-    if round(len(particles)/2)>0:
-        return rproj[ round(len(particles)/2) ]
-    else:
-        return rproj
                     
 def get_dist(pos):
 
@@ -34,15 +20,6 @@ def get_dist(pos):
 
     return np.sqrt(pos[:,0]**2+pos[:,1]**2+pos[:,2]**2)
 
-def get_mass(m,a,r1,r2):
-
-    # calculates the mass enclosed at distances r1 and r2 
-    # from the center of the main halo 
-    # according to the plummer profile 
-
-    x1 = m*(r1**3)/((r1**2+a**2)**(3.0/2.0))
-    x2 = m*(r2**3)/((r2**2+a**2)**(3.0/2.0))
-    return x2-x1
 
 
 def get_the_right_halonums(DMOname,halo):
@@ -123,17 +100,6 @@ def group_mergers(z_merges,h_merges):
 
 
 
-
-
-def plum_const(hDMO,z_val,insitu):
-    if insitu == 'insitu':
-        return ((0.015*hDMO['r200c'])/1.3) if z_val > 4 else ((10**(0.1*hDMO['r200c'] - 4.2))/1.3)
-    else:
-        return ((0.015*hDMO['r200c'])/1.3)
-
-
-#prod_binned
-
 def rank_order_particles_by_angmom(DMOparticles, hDMO):
     
     print('this is how many DMOparticles were passed',len(DMOparticles))
@@ -154,7 +120,7 @@ def rank_order_particles_by_angmom(DMOparticles, hDMO):
     return np.asarray(particles_ordered_by_angmom)
 
 
-#get bins 
+
 
 def assign_stars_to_particles(snapshot_stellar_mass,particles_sorted_by_angmom,most_bound_fraction,selected_particles):
     
