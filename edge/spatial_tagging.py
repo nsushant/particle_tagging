@@ -35,7 +35,7 @@ def help():
 
 
 
-def tag_particles(sim_name_input,occupation_fraction,filename_for_run):
+def tag_particles(sim_name_input,occupation_fraction,filename_for_run,mergers=True):
     
     #used paths
     tangos_path_edge     = '/vol/ph/astro_data/shared/morkney/EDGE/tangos/'
