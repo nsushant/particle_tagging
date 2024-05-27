@@ -309,11 +309,12 @@ def tag_particles(sim_name_input,occupation_fraction,filename_for_run,mergers=Tr
                     try:
                         prob_occupied = calculate_poccupied(hDM,occupation_fraction)
                         
-                    except:
-                        print("poccupied couldn't be calculated")
+                    except Exception as poccupied_error:
+                        print("poccupied couldn't be calculated -->",poccupied_error)
                         continue
                     
                     if (np.random.random() > prob_occupied):
+                        print('successfully calculated poccupied')
                         continue
                                                                                                                                                                             
                     try:
