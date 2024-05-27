@@ -16,7 +16,7 @@ import gc
 import random
 import sys
 import pandas as pd
-from .functions_for_angular_momentum_tagging import *
+from particle_tagging_package.tagging.angular_momentum_tagging import *
 
 # specify preference of halo catalog
 pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
