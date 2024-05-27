@@ -21,7 +21,7 @@ from tangos.examples.mergers import *
 import random
 import sys
 import pandas as pd
-from .functions_for_angular_momentum_tagging import *
+from .tagging_functions.angular_momentum_tagging import *
 
 def get_child_iords(halo,halo_catalog,DMOstate='fiducial'):
 
