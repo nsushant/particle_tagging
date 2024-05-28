@@ -23,6 +23,7 @@ import random
 import sys
 import pandas as pd
 from particle_tagging_package.tagging.spatial_tagging import *
+from particle_tagging_package.tagging.utils import *
 
 
 def help():
@@ -120,7 +121,7 @@ def tag_particles(sim_name_input,occupation_fraction,filename_for_run,mergers=Tr
         snapshots.sort()
         
         # load in the DMO sim to get particle data and get accurate halonums, main halo object, in each snapshot
-        DMOsim,main_halo,halonums,outputs = get_the_right_halonums(DMOname,0)
+        DMOsim,main_halo,halonums,outputs = load_tangos_data(DMOname,0)
             
         #darklight stellar masses used for the selection of insitu particles
         t,redshift,vsmooth,sfh_insitu,mstar_s_insitu,mstar_total = DarkLight(main_halo,DMO=True,mergers=False,poccupied=occupation_fraction)
@@ -146,7 +147,7 @@ def tag_particles(sim_name_input,occupation_fraction,filename_for_run,mergers=Tr
         print('dkl',np.array(mstar_s_insitu))
 
         #initialize '12' empty arrrays named as shown (for storage of calculated tagging parameters and particle IDs)
-        part_typ,time_of_choice,redshift_of_choice,chosen_parts,pos_choice_x,pos_choice_y,pos_choice_z,m_tot,a_coeff,a_coeff_merger,a_coeff_tot,output_number =initialize_arrays(12)
+        part_typ,time_of_choice,redshift_of_choice,chosen_parts,pos_choice_x,pos_choice_y,pos_choice_z,m_tot,a_coeff,a_coeff_merger,a_coeff_tot,output_number = initialize_arrays(12)
 
         # number of stars left over after selection (per iteration)
         leftover=0
@@ -526,7 +527,7 @@ def calculate_reffs(sim_name, particles_tagged,reffs_fname,from_file = False,fro
         
      
         ## the for loop should run from here
-        DMOsim,main_halo,halonums,outputs = get_the_right_halonums(DMOname,0)
+        DMOsim,main_halo,halonums,outputs = load_tangos_data(DMOname,0)
         
 
 
