@@ -22,6 +22,7 @@ import random
 import sys
 import pandas as pd
 from particle_tagging_package.tagging.angular_momentum_tagging import *
+from particle_tagging_package.tagging.utils import *
 
 def get_child_iords(halo,halo_catalog,DMOstate='fiducial'):
 
@@ -173,12 +174,12 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
         snapshots.sort()
         
         # load in the DMO sim to get particle data and get accurate halonums for the main halo in each snapshot
-        # get_the_right_halonums loads in the tangos database 'DMOsim' and returns the main halos tangos object, outputs and halonums at all timesteps
+        # load_tangos_data is a part of the 'utils.py' file in the tagging dir, it loads in the tangos database 'DMOsim' and returns the main halos tangos object, outputs and halonums at all timesteps
         # here haloidx_at_end specifies the index associated with the main halo at the last snapshot in the tangos db's halo catalogue
 
         haloidx_at_end = 0
         
-        DMOsim,main_halo,halonums,outputs = get_the_right_halonums(DMOname,0)
+        DMOsim,main_halo,halonums,outputs = load_tangos_data(DMOname,0)
         
         print('HALONUMS:---',len(halonums), "OUTPUTS---",len(outputs))
         
@@ -617,7 +618,7 @@ def calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_file=None
         valid_times = main_halo.calculate_for_progenitors('t()')[0][::-1]
         '''
         
-        DMOsim,main_halo,halonums,outputs = get_the_right_halonums(DMOname,0)
+        DMOsim,main_halo,halonums,outputs = load_tangos_data(DMOname,0)
         
         #outputs = np.array([DMOsim.timesteps[i].__dict__['extension'] for i in range(len(DMOsim.timesteps))])[-len(halonums):]
 
@@ -660,11 +661,6 @@ def calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_file=None
 
             gc.collect()
 
-            #print(data_t[i])
-
-            #if i >= int(stop_run):
-             #   print('skipped')
-              #  continue
             
             if len(np.where(data_t <= float(t_all[i]))) == 0:
                 continue
