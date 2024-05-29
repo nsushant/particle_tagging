@@ -187,14 +187,60 @@ def plot_tagged_vs_hydro_mass_dist(DMO_halo_particles, HYDRO_halo_particles, fil
 
 
 def edge_plot_tagged_vs_hydro_angmom_dist():
-    
+    print('not yet implemented')
     return 
 
 
 
-def plot_tagged_vs_hydro_angmom_dist():
+def plot_tagged_vs_hydro_angmom_dist(DMO_halo_particles,HYDRO_halo_particles,file_with_tagged_particles,time_to_plot):
+    
+    h = HYDRO_halo_particles
+    s = h.st 
+    # centering on most massive halo                                                                                                                                                                                                                               
+    
+    pynbody.analysis.halo.center(h)
+    r200_HYDRO = pynbody.analysis.halo.virial_radius(h, overden=200, r_max=None, rho_def='critical')
+    
+    stars = s.st[ np.sqrt(s.st['x']**2+s.st['y']**2+s.st['z']**2) <= r200_HYDRO ] 
+                                                                                                                                                                                                                  
+    rdists = np.sqrt(stars['x']**2+stars['y']**2+stars['z']**2)
+    
+    jstars = np.sqrt(stars['j'][:,0]**2+stars['j'][:,1]**2+stars['j'][:,2]**2)
+    
+    #create dataframe                                                                                                                                                                                                                                              
+    
+    df = pd.DataFrame({'r':rdists,'j':jstars, 'mass':stars['mass']})
+    
+    s_tagged = DMO_halo_particles
+
+    # Stellar Mass weighted median at each radial distance  for tagged particles                                                                                                                                                                                   
+    
+    d = pd.read_csv(file_with_tagged_particles)
+    dt = d[ d['t'] <= time_to_plot ].groupby(['iords']).last()
+    
+    tagged_iords = dt.index.values
+    
+    tagged_particles = s_tagged[np.where(np.isin(s_tagged['iord'],tagged_iords)==True)]
+
+    #print(tagged_stars[0]['iord'], np.where(tagged_masses.index.values == tagged_stars[0]['iord']) )                                                                                                                                                              
+    
+    #print(tagged_masses.loc[tagged_stars[0]['iord']])                                                                                                                                                                                                             
+    
+    jtagged = np.sqrt(tagged_particles['j'][:,0]**2+tagged_particles['j'][:,1]**2+tagged_particles['j'][:,2]**2)
+    
+    rtagged = np.sqrt(tagged_particles['x']**2+tagged_particles['y']**2+tagged_particles['z']**2)
+    
+    #print(tagged_stars['j'].units)                                                                                                                                                                                                                                
+    mstar_tagged = [dt.loc[i]['mstar'] for i in tagged_particles['iord']]
+    
+    dftagged = pd.DataFrame({'r':rtagged,'j':jtagged, 'mass':mstar_tagged })
+                                                                                                                                                         
+    plt.hist(np.asarray(jtagged),weights= np.asarray(mstar_tagged),histtype='step',label="angmom tagging")                                                                                                                                                        
+    plt.hist(np.asarray(jstars),weights= np.asarray(stars['mass']),histtype='step',label="Hydro Sim")                                                                                                                                                             
+    plt.yscale('log')
     
     return 
+
 
 
 
