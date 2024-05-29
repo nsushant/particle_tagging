@@ -35,7 +35,7 @@ tangos_main_halo_object = tangos_simulation.timesteps[-1].halos[0]
 halonums = tangos_main_halo_object.calculate_for_progenitors('halo_number()')[0][::-1]
 
 output_names = np.array([tangos_simulation.timesteps[i].__dict__['extension'] for i in range(len(tangos_simulation.timesteps))])
-# Alternatively the halonums and output names  can be supplied as arrays 
+# Alternatively the halonums and output names can be supplied as arrays 
 
 
 # get darklight stellar masses for each snapshot
@@ -67,8 +67,6 @@ free_parameter_value = 0.01
 particles_sorted_by_angmom = rank_order_particles_by_angmom(particles_in_virial_radius, tangos_main_halo_object)
 selected_particles,array_to_write = assign_stars_to_particles(stellar_mass_to_assign,particles_sorted_by_angmom, free_parameter_value,np.array([]))
 
-
-# Analysis and plotting Functions 
 
 
 
