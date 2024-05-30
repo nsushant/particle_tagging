@@ -16,7 +16,7 @@ mpl.rcParams.update({'text.usetex': False})
 pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
 
 
-def edge_plot_tagged_vs_hydro_mass_dist(name_of_DMO_simulation,name_of_HYDRO_simulation, file_with_tagged_particles, time_to_plot, plot_type='2D Mass Distribution'):
+def edge_plot_tagged_vs_hydro_mass_dist(name_of_DMO_simulation, name_of_HYDRO_simulation, file_with_tagged_particles, time_to_plot, plot_type='2D Mass Distribution'):
     
     tangos_path     = '/vol/ph/astro_data/shared/morkney/EDGE/tangos/'
     pynbody_path    = '/vol/ph/astro_data/shared/morkney/EDGE/'
@@ -104,6 +104,19 @@ def edge_plot_tagged_vs_hydro_mass_dist(name_of_DMO_simulation,name_of_HYDRO_sim
 
       plt.title(str(name_of_HYDRO_simulation)+"t = "+str(time_to_plot))
   
+    if plot_type == '1D Mass Enclosed':
+      
+      plt.plot(dataframe_for_hist['r'].values,dataframe_for_hist['m_enclosed'].values)
+    
+      plt.xlim(0,1)
+
+      plt.yscale('log')
+
+      plt.title(str(name_of_HYDRO_simulation)+"t = "+str(time_to_plot))
+      
+      plt.ylabel(' $M_{star}(<r)$ in $M_{\odot}$')
+      plt.xlabel('Radial Distance in Kpc')
+
     if plot_type == '1D Mass Distribution':
       
       plt.plot(dataframe_for_hist['r'].values,dataframe_for_hist['m_enclosed'].values)
@@ -114,7 +127,7 @@ def edge_plot_tagged_vs_hydro_mass_dist(name_of_DMO_simulation,name_of_HYDRO_sim
 
       plt.title(str(name_of_HYDRO_simulation)+"t = "+str(time_to_plot))
       
-      plt.ylabel('Mass in $M_{\odot}$')
+      plt.ylabel('Stellar Mass in $M_{\odot}$')
       plt.xlabel('Radial Distance in Kpc')
     
     return 
@@ -176,6 +189,19 @@ def plot_tagged_vs_hydro_mass_dist(DMO_halo_particles, HYDRO_halo_particles, fil
 
       plt.title(str(name_of_HYDRO_simulation)+"t = "+str(time_to_plot))
   
+    if plot_type == '1D Mass Enclosed':
+      
+      plt.plot(dataframe_for_hist['r'].values,dataframe_for_hist['m_enclosed'].values)
+    
+      plt.xlim(0,1)
+
+      plt.yscale('log')
+
+      plt.title(str(name_of_HYDRO_simulation)+"t = "+str(time_to_plot))
+      
+      plt.ylabel(' $M_{star}(<r)$ in $M_{\odot}$')
+      plt.xlabel('Radial Distance in Kpc')
+
     if plot_type == '1D Mass Distribution':
       
       plt.plot(dataframe_for_hist['r'].values,dataframe_for_hist['m_enclosed'].values)
@@ -186,10 +212,11 @@ def plot_tagged_vs_hydro_mass_dist(DMO_halo_particles, HYDRO_halo_particles, fil
 
       plt.title(str(name_of_HYDRO_simulation)+"t = "+str(time_to_plot))
       
-      plt.ylabel('Mass in $M_{\odot}$')
+      plt.ylabel('Stellar Mass in $M_{\odot}$')
       plt.xlabel('Radial Distance in Kpc')
     
     return 
+
 
 
 
