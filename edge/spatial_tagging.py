@@ -61,7 +61,7 @@ def tag_particles(sim_name_input,occupation_fraction,filename_for_run,mergers=Tr
     ]
     '''
     sims = [sim_name_input]
-
+    
     # keeps count of the number of mergers
     mergers_count = 0
         
@@ -149,6 +149,8 @@ def tag_particles(sim_name_input,occupation_fraction,filename_for_run,mergers=Tr
         #initialize '12' empty arrrays named as shown (for storage of calculated tagging parameters and particle IDs)
         part_typ,time_of_choice,redshift_of_choice,chosen_parts,pos_choice_x,pos_choice_y,pos_choice_z,m_tot,a_coeff,a_coeff_merger,a_coeff_tot,output_number = initialize_arrays(12)
 
+        tagged_stellar_masses = []
+        
         # number of stars left over after selection (per iteration)
         leftover=0
 
@@ -273,7 +275,7 @@ def tag_particles(sim_name_input,occupation_fraction,filename_for_run,mergers=Tr
                         
                         time_of_choice = np.append(time_of_choice,tgyr_of_choice)
                         #a_coeff = np.append(a_coeff,a_storage)
-
+                        
                         part_typ = np.append(part_typ, p_typ)
                         a_coeff_tot = np.append(a_coeff_tot, a_storage)
                         m_tot = np.append(m_tot,m_storage)
@@ -402,7 +404,8 @@ def tag_particles(sim_name_input,occupation_fraction,filename_for_run,mergers=Tr
                             a_coeff_tot = np.append(a_coeff_tot, a_storage_merge)
                                 
                             m_tot = np.append(m_tot, m_storage_merge)
-        
+
+                        
                             print('triggered , -------------------------------------------------------------------------------------- we selected',len(choose_parts_merger),'particles ------------')
                  
             # If particle data has been loaded in, delete this before the next snapshot is analysed
@@ -417,7 +420,7 @@ def tag_particles(sim_name_input,occupation_fraction,filename_for_run,mergers=Tr
 
         
         
-        df_spatially_tagged_particles = pd.DataFrame({'iords':chosen_parts , 'z':redshift_of_choice, 't':time_of_choice, 'type':part_typ})
+        df_spatially_tagged_particles = pd.DataFrame({'iords':chosen_parts , 'z':redshift_of_choice, 't':time_of_choice, 'type':part_typ, 'mstar':1112*np.ones(len(chosen_parts))})
         
         df_spatially_tagged_particles.to_csv(filename_for_run)
         

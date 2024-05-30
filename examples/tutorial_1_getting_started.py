@@ -26,6 +26,8 @@ path_to_tangos_db = '/vol/ph/astro_data/shared/morkney/EDGE/tangos/'
 
 name_of_db = 'Halo1459.db'
 
+simname = 'Halo1459_DMO'
+
 ## tangos database initialization
 tangos.core.init_db(path_to_tangos_db+name_of_db)
 
@@ -49,7 +51,7 @@ path_to_pynbody_data = '/vol/ph/astro_data/shared/morkney/EDGE/'
 name_of_simulation = 'Halo1459_DMO'
 
 path_to_pynbody_simulation = join(path_to_pynbody_data,name_of_simulation,output_names[-1])
-simulation_particles = pynbody.load(path_to_pynbody_simulation).dm
+simulation_particles = pynbody.load(path_to_pynbody_simulation)
 simulation_particles.physical_units()
 
 ##centering snapshot on main halo 
@@ -58,14 +60,21 @@ main_halo_pynbody = halo_catalogue[int(halonums[-1])-1]
 pynbody.analysis.halo.center(main_halo_pynbody)
 
 
-# Perform tagging based on angular momentum 
+# Perform tagging based on angular momentum for a single snapshot  
+
 main_halo_virial_radius = pynbody.analysis.halo.virial_radius(main_halo_pynbody.d, overden=200, r_max=None, rho_def='critical')                                                                                             
 particles_in_virial_radius  = simulation_particles[sqrt(simulation_particles['pos'][:,0]**2 + simulation_particles['pos'][:,1]**2 + simulation_particles['pos'][:,2]**2) <= main_halo_virial_radius ]
 
 free_parameter_value = 0.01
 
 particles_sorted_by_angmom = rank_order_particles_by_angmom(particles_in_virial_radius, tangos_main_halo_object)
-selected_particles,array_to_write = assign_stars_to_particles(stellar_mass_to_assign,particles_sorted_by_angmom, free_parameter_value,np.array([]))
+selected_particles,array_to_write = assign_stars_to_particles(stellar_mass_to_assign,particles_sorted_by_angmom, free_parameter_value,[np.array([]),np.array([])])
+
+
+
+
+
+
 
 
 

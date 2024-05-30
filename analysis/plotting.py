@@ -13,11 +13,13 @@ from particle_tagging_package.tagging.utils import *
 
 mpl.rcParams.update({'text.usetex': False})
 
+pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
+
 
 def edge_plot_tagged_vs_hydro_mass_dist(name_of_DMO_simulation,name_of_HYDRO_simulation, file_with_tagged_particles, time_to_plot, plot_type='2D Mass Distribution'):
     
-    tangos_path_edge     = '/vol/ph/astro_data/shared/morkney/EDGE/tangos/'
-    pynbody_path_edge    = '/vol/ph/astro_data/shared/morkney/EDGE/'
+    tangos_path     = '/vol/ph/astro_data/shared/morkney/EDGE/tangos/'
+    pynbody_path    = '/vol/ph/astro_data/shared/morkney/EDGE/'
     
     # finding mass distribution of tagged particles in DMO simulation 
 
@@ -38,7 +40,7 @@ def edge_plot_tagged_vs_hydro_mass_dist(name_of_DMO_simulation,name_of_HYDRO_sim
     s.physical_units()
   
 
-    h = s.halos()[1]
+    h = s.halos()[int(halonums[output_number] - 1)]
     
     pynbody.analysis.halo.center(h)
 
@@ -56,7 +58,8 @@ def edge_plot_tagged_vs_hydro_mass_dist(name_of_DMO_simulation,name_of_HYDRO_sim
 
     dataframe_for_hist = pd.DataFrame({'r':np.sqrt(selected_parts['x']**2+selected_parts['y']**2+selected_parts['z']**2), 'masses':np.asarray(selected_masses)})
 
-
+    print(data_all_tagged.head())
+    
     dataframe_for_hist = dataframe_for_hist.sort_values(by=['r'])
 
     dataframe_for_hist['m_enclosed'] = np.cumsum(dataframe_for_hist['masses'].values)
@@ -67,23 +70,27 @@ def edge_plot_tagged_vs_hydro_mass_dist(name_of_DMO_simulation,name_of_HYDRO_sim
     sim, HYDRO_main_halo, HYDRO_halonums, outputs_HYDRO = load_tangos_data(name_of_HYDRO_simulation,0)
     
     times_tangos_HYDRO = HYDRO_main_halo.calculate_for_progenitors('t()')[0][::-1]
+
+    halonums_hydro = HYDRO_main_halo.calculate_for_progenitors('halo_number()')[0][::-1]
     
-    output_number_HYDRO = np.where(times_tangos_hydro <= time_to_plot)[0][-1]
+    output_number_HYDRO = np.where(times_tangos_HYDRO <= time_to_plot)[0][-1]
  
     s_hydro = pynbody.load(os.path.join(pynbody_path,name_of_HYDRO_simulation,outputs_HYDRO[output_number_HYDRO]))
     
     s_hydro.physical_units()
     
-    h_hydro = s_hydro.halos()[1]
+    h_hydro = s_hydro.halos()[int(halonums_hydro[output_number_HYDRO] - 1)]
     
-    #reff_hydro = dt_ahf_hydro['reff'].values
+    print(s_hydro[0].st,s_hydro[1].st)
     
     pynbody.analysis.halo.center(h_hydro)
-    
-    stars = h_hydro.st
+
+    r200_hydro = pynbody.analysis.halo.virial_radius(h_hydro, overden=200, r_max=None, rho_def='critical')
+
+    stars = s_hydro.st[get_dist(s_hydro.st['pos'])<=r200_hydro]
     
     data_all_stars = pd.DataFrame({'x':stars['x'],'y':stars['y'], 'masses':np.asarray(stars['mass'])})
-        
+    print(data_all_stars.head())
     
     if plot_type == '2D Mass Distribution':
 
