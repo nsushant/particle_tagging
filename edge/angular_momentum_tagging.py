@@ -163,21 +163,9 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
             print('--> DMO simulation with name '+DMOname+' does not exist, skipping!')
             continue
         
-        # listdir returns the list of entries in a given dir path (like ls on a dir)
-        # isdir check if the given dir exists
-        # join creates a string consisting of the path,name,entry in dir
-        # once we have this string we check to see if the word 'output' is in this string (to grab only the output snapshots)
-        
-        snapshots = [ f for f in listdir(join(pynbody_path,DMOname)) if (isdir(join(pynbody_path,DMOname,f)) and f[:6]=='output') ]
-        
-        #sort the list of snapshots in ascending order
-        snapshots.sort()
-        
         # load in the DMO sim to get particle data and get accurate halonums for the main halo in each snapshot
         # load_tangos_data is a part of the 'utils.py' file in the tagging dir, it loads in the tangos database 'DMOsim' and returns the main halos tangos object, outputs and halonums at all timesteps
-        # here haloidx_at_end specifies the index associated with the main halo at the last snapshot in the tangos db's halo catalogue
-
-        haloidx_at_end = 0
+        # here haloidx_at_end or 0 here specifies the index associated with the main halo at the last snapshot in the tangos db's halo catalogue
         
         DMOsim,main_halo,halonums,outputs = load_tangos_data(DMOname,0)
         
@@ -379,7 +367,7 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
                     if particles_sorted_by_angmom.shape[0] == 0:
                         continue
                     
-                    selected_particles,array_to_write = assign_stars_to_particles(mass_select,particles_sorted_by_angmom,float(fmb_percentage),selected_particles)
+                    selected_particles,array_to_write = assign_stars_to_particles(mass_select,particles_sorted_by_angmom,float(fmb_percentage),selected_particles = selected_particles)
                     #halonums_indexing+=1
                     writer = csv.writer(particle_storage_file)
                     print('writing insitu particles to output file')
@@ -497,7 +485,7 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
                 
                             print('assinging stars to accreted particles')
 
-                            selected_particles,array_to_write_accreted = assign_stars_to_particles(mass_select_merge,accreted_particles_sorted_by_angmom,float(fmb_percentage),selected_particles)
+                            selected_particles,array_to_write_accreted = assign_stars_to_particles(mass_select_merge,accreted_particles_sorted_by_angmom,float(fmb_percentage),selected_particles = selected_particles)
                             
                             writer = csv.writer(particle_storage_file)
                 
