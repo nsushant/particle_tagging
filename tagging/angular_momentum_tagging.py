@@ -6,7 +6,6 @@ import random
 import pynbody
 from .utils import *
 
-
 def rank_order_particles_by_angmom(DMOparticles, hDMO):
     
     print('this is how many DMOparticles were passed',len(DMOparticles))
@@ -29,7 +28,7 @@ def rank_order_particles_by_angmom(DMOparticles, hDMO):
 
 
 
-def assign_stars_to_particles(snapshot_stellar_mass,particles_sorted_by_angmom,most_bound_fraction,selected_particles):
+def assign_stars_to_particles(snapshot_stellar_mass,particles_sorted_by_angmom,most_bound_fraction,selected_particles = [np.array([]),np.array([])]):
     
     '''
     selected_particles is a 2d array with rows = 2, cols = num of particles  
@@ -73,14 +72,20 @@ def assign_stars_to_particles(snapshot_stellar_mass,particles_sorted_by_angmom,m
     array_masses = np.append(selected_particles[1][idxs_previously_selected],np.repeat(stellar_mass_assigned,how_many_not_previously_selected))
 
     updates_to_arrays = np.array([array_iords,array_masses])
-
-
+    
     return selected_particles,updates_to_arrays
     
 
+
+def tag(DMOparticles, hDMO, snapshot_stellar_mass, free_param_value, previously_tagged_particles = [np.array([]),np.array([])]):
+    
+    particles_ordered_by_angmom = rank_order_particles_by_angmom(DMOparticles, hDMO)
+
+    return assign_stars_to_particles(snapshot_stellar_mass,particles_sorted_by_angmom, free_param_value, selected_particles = previously_tagged_particles)
+    
+     
     
 
-    
     
     
     
