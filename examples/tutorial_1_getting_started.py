@@ -16,59 +16,49 @@ import gc
 import random
 import sys
 import pandas as pd
-from particle_tagging_package.tagging.angular_momentum_tagging import *
+#from particle_tagging_package.tagging.angular_momentum_tagging import *
+import particle_tagging_package.tagging as ptag 
+
 
 # specify preference of halo catalog
 pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
     
 # Loading-in the tangos data 
-path_to_tangos_db = '/vol/ph/astro_data/shared/morkney/EDGE/tangos/'
-
-name_of_db = 'Halo1459.db'
-
-simname = 'Halo1459_DMO'
-
 ## tangos database initialization
-tangos.core.init_db(path_to_tangos_db+name_of_db)
+tangos.core.init_db('/vol/ph/astro_data/shared/morkney/EDGE/tangos/Halo1459.db')
 
 ## loading in the simulation data  
-tangos_simulation = tangos.get_simulation(simname)
+tangos_simulation = tangos.get_simulation('Halo1459_DMO')
 tangos_main_halo_object = tangos_simulation.timesteps[-1].halos[0]
+
+## Alternatively supply halonums, output names as arrays
 halonums = tangos_main_halo_object.calculate_for_progenitors('halo_number()')[0][::-1]
-
 output_names = np.array([tangos_simulation.timesteps[i].__dict__['extension'] for i in range(len(tangos_simulation.timesteps))])
-# Alternatively the halonums and output names can be supplied as arrays 
-
-
-# get darklight stellar masses for each snapshot
+ 
+# get stellar mass to tag using darklight 
+## alternatively, provide mstar (in units of solar masses) 
 t_darklight,z_darklight,vsmooth,sfh_insitu,mstar_snap_insitu,mstar_total = DarkLight(tangos_main_halo_object,DMO=True,mergers = False)
-
-# alternatively, provide mstar (in units of solar masses) to tag
 stellar_mass_to_assign = mstar_snap_insitu[-1]
 
-# Loading-in the pynbody particle data and simulation snapshot 
-path_to_pynbody_data = '/vol/ph/astro_data/shared/morkney/EDGE/'
-name_of_simulation = 'Halo1459_DMO'
-
-path_to_pynbody_simulation = join(path_to_pynbody_data,name_of_simulation,output_names[-1])
-simulation_particles = pynbody.load(path_to_pynbody_simulation)
+# Loading-in the pynbody particle data for the last simulation snapshot 
+simulation_particles = pynbody.load(join('/vol/ph/astro_data/shared/morkney/EDGE/Halo1459_DMO',output_names[-1]))
 simulation_particles.physical_units()
 
 ##centering snapshot on main halo 
-halo_catalogue = simulation_particles.halos()
-main_halo_pynbody = halo_catalogue[int(halonums[-1])-1]
+main_halo_pynbody = simulation_particles.halos()[int(halonums[-1])-1]
 pynbody.analysis.halo.center(main_halo_pynbody)
-
-
-# Perform tagging based on angular momentum for a single snapshot  
 
 main_halo_virial_radius = pynbody.analysis.halo.virial_radius(main_halo_pynbody.d, overden=200, r_max=None, rho_def='critical')                                                                                             
 particles_in_virial_radius  = simulation_particles[sqrt(simulation_particles['pos'][:,0]**2 + simulation_particles['pos'][:,1]**2 + simulation_particles['pos'][:,2]**2) <= main_halo_virial_radius ]
 
-free_parameter_value = 0.01
+# Perform tagging based on angular momentum for a single snapshot  
 
-particles_sorted_by_angmom = rank_order_particles_by_angmom(particles_in_virial_radius, tangos_main_halo_object)
-selected_particles,array_to_write = assign_stars_to_particles(stellar_mass_to_assign,particles_sorted_by_angmom, free_parameter_value,[np.array([]),np.array([])])
+## here the script array = [ all selected particle ids, masses tagged ] , array_to_write_to_output_file =  [ newly selected particle ids, masses tagged ]
+## script_array = array_to_write_to_output_file for single snapshot tagging but different when running over >1 snapshot 
+script_array,array_to_write_to_output_file = ptag.angular_momentum_tagging.tag(particles_in_virial_radius, tangos_main_halo_object, stellar_mass_to_assign, free_param_value = 0.01)
+
+#particles_sorted_by_angmom = rank_order_particles_by_angmom(particles_in_virial_radius, tangos_main_halo_object)
+#selected_particles,array_to_write = assign_stars_to_particles(stellar_mass_to_assign,particles_sorted_by_angmom, free_parameter_value,[np.array([]),np.array([])])
 
 
 
