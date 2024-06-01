@@ -77,7 +77,7 @@ def assign_stars_to_particles(snapshot_stellar_mass,particles_sorted_by_angmom,m
     
 
 
-def tag(DMOparticles, hDMO, snapshot_stellar_mass, free_param_value, previously_tagged_particles = [np.array([]),np.array([])]):
+def tag(DMOparticles, hDMO, snapshot_stellar_mass, free_param_value = 0.01, previously_tagged_particles = [np.array([]),np.array([])]):
     
     particles_ordered_by_angmom = rank_order_particles_by_angmom(DMOparticles, hDMO)
 
