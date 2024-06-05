@@ -121,7 +121,7 @@ def tag_particles(sim_name_input,occupation_fraction,filename_for_run,mergers=Tr
         snapshots.sort()
         
         # load in the DMO sim to get particle data and get accurate halonums, main halo object, in each snapshot
-        DMOsim,main_halo,halonums,outputs = load_tangos_data(DMOname,0)
+        DMOsim,main_halo,halonums,outputs = load_indexing_data_and_halo_object(DMOname,1)
             
         #darklight stellar masses used for the selection of insitu particles
         t,redshift,vsmooth,sfh_insitu,mstar_s_insitu,mstar_total = DarkLight(main_halo,DMO=True,mergers=False,poccupied=occupation_fraction)
@@ -530,7 +530,7 @@ def calculate_reffs(sim_name, particles_tagged,reffs_fname,from_file = False,fro
         
      
         ## the for loop should run from here
-        DMOsim,main_halo,halonums,outputs = load_tangos_data(DMOname,0)
+        DMOsim,main_halo,halonums,outputs = load_indexing_data_and_halo_object(DMOname,1)
         
 
 
