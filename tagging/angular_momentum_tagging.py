@@ -85,18 +85,17 @@ def tag(DMOparticles, hDMO, snapshot_stellar_mass, free_param_value = 0.01, prev
     
 
 # under construction
-def tag_over_full_sim(DMOsim, fmb_percentage = 0.01, particle_storage_filename=None, AHF_centers_file=None, mergers = True, AHF_centers_supplied=False):
+def tag_over_full_sim(DMOsim, halo_number = 1, fmb_percentage = 0.01, particle_storage_filename=None, AHF_centers_file=None, mergers = True, AHF_centers_supplied=False):
   
     pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
 
     # path to particle data 
     pynbody_path    = '/vol/ph/astro_data/shared/morkney/EDGE/'
-        
+    DMOname = DMOsim.path
     # load in the DMO sim to get particle data and get accurate halonums for the main halo in each snapshot
     # load_tangos_data is a part of the 'utils.py' file in the tagging dir, it loads in the tangos database 'DMOsim' and returns the main halos tangos object, outputs and halonums at all timesteps
-    # here haloidx_at_end or 0 here specifies the index associated with the main halo at the last snapshot in the tangos db's halo catalogue
     
-    t_all, red_all, main_halo,halonums,outputs = load_indexing_data(DMOsim,1)
+    t_all, red_all, main_halo,halonums,outputs = load_indexing_data(DMOsim,halo_number)
     
     # Get stellar masses at each redshift using darklight for insitu tagging (mergers = False excludes accreted mass)
     t,redshift,vsmooth,sfh_insitu,mstar_s_insitu,mstar_total = DarkLight(main_halo,DMO=True,mergers = False, poccupied='all')
