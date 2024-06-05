@@ -21,21 +21,23 @@ def get_dist(pos):
                     
 
 
-def load_indexing_data_and_halo_object(DMOname,halo_number):
+def load_indexing_data(DMOsim,halo_number):
     
-    DMOsim = darklight.edge.load_tangos_data(DMOname,machine='astro')
     main_halo = DMOsim.timesteps[-1].halos[int(halo_number) - 1]
+    
     halonums = main_halo.calculate_for_progenitors('halo_number()')[0][::-1]
-    times_valid = main_halo.calculate_for_progenitors('t()')[0][::-1]
+   
+    t_all = main_halo.calculate_for_progenitors('t()')[0][::-1]
+    red_all = main_halo.calculate_for_progenitors('z()')[0][::-1] 
     
     outputs = np.array([DMOsim.timesteps[i].__dict__['extension'] for i in range(len(DMOsim.timesteps))])
     times_tangos = np.array([ DMOsim.timesteps[i].__dict__['time_gyr'] for i in range(len(DMOsim.timesteps)) ])
 
-    valid_outputs = outputs[np.isin(times_tangos,times_valid)]
+    valid_outputs = outputs[np.isin(times_tangos, t_all)]
     
     valid_outputs.sort()
     #snapshots = [ f for f in listdir(pynbody_path+DMOname) if (isdir(join(pynbody_path,DMOname,f)) and f[:6]=='output') ]
-    return DMOsim, main_halo, halonums, valid_outputs
+    return t_all, red_all, main_halo, halonums, valid_outputs
 
 
 
