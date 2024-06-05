@@ -22,7 +22,7 @@ import random
 import sys
 import pandas as pd
 from particle_tagging_package.tagging.angular_momentum_tagging import *
-from particle_tagging_package.tagging.utils import *
+from particle_tagging_package.edge.utils import *
 
 def get_child_iords(halo,halo_catalog,DMOstate='fiducial'):
 
@@ -83,7 +83,6 @@ pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
 
 def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_filename,AHF_centers_file=None,mergers = True,AHF_centers_supplied=False):
 
-    pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
     
     #used paths
     tangos_path_edge     = '/vol/ph/astro_data/shared/morkney/EDGE/tangos/'
@@ -167,7 +166,7 @@ def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_f
         # load_tangos_data is a part of the 'utils.py' file in the tagging dir, it loads in the tangos database 'DMOsim' and returns the main halos tangos object, outputs and halonums at all timesteps
         # here haloidx_at_end or 0 here specifies the index associated with the main halo at the last snapshot in the tangos db's halo catalogue
         
-        DMOsim,main_halo,halonums,outputs = load_indexing_data_and_halo_object(DMOname,1)
+        DMOsim,main_halo,halonums,outputs = load_indexing_data(DMOname,1)
         
         print('HALONUMS:---',len(halonums), "OUTPUTS---",len(outputs))
         
@@ -606,7 +605,7 @@ def calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_file=None
         valid_times = main_halo.calculate_for_progenitors('t()')[0][::-1]
         '''
         
-        DMOsim,main_halo,halonums,outputs = load_indexing_data_and_halo_object(DMOname,1)
+        DMOsim,main_halo,halonums,outputs = load_indexing_data(DMOname,1)
         
         #outputs = np.array([DMOsim.timesteps[i].__dict__['extension'] for i in range(len(DMOsim.timesteps))])[-len(halonums):]
 
