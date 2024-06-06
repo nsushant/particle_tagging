@@ -85,7 +85,7 @@ def tag(DMOparticles, hDMO, snapshot_stellar_mass, free_param_value = 0.01, prev
     
 
 # under construction
-def tag_over_full_sim(DMOsim, pynbody_path  = '/vol/ph/astro_data/shared/morkney/EDGE/', fmb_percentage = 0.01, particle_storage_filename=None, AHF_centers_file=None, mergers = True, AHF_centers_supplied=False):
+def tag_over_full_sim(DMOsim, fmb_percentage = 0.01, pynbody_path  = '/vol/ph/astro_data/shared/morkney/EDGE/', particle_storage_filename=None, AHF_centers_file=None, mergers = True):
   
     pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
 
@@ -227,11 +227,11 @@ def tag_over_full_sim(DMOsim, pynbody_path  = '/vol/ph/astro_data/shared/morkney
         
             subhalo_iords = np.array([])
             
-            if AHF_centers_supplied==False:
+            if AHF_centers_file == None:
                 print(int(halonums[i])-1)
                 h = DMOparticles.halos()[int(halonums[i])-1]
 
-            elif AHF_centers_supplied == True:
+            elif AHF_centers_file != None:
                 pynbody.config["halo-class-priority"] = [pynbody.halo.ahf.AHFCatalogue]
                 
                 AHF_crossref = AHF_centers[AHF_centers['i'] == i]['AHF catalogue id'].values[0]
