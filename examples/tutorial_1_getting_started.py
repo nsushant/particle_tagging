@@ -28,6 +28,8 @@ tangos.core.init_db('/vol/ph/astro_data/shared/morkney/EDGE/tangos/Halo1459.db')
 
 ## loading in the simulation data  
 tangos_simulation = tangos.get_simulation('Halo1459_DMO')
+
+'''
 tangos_main_halo_object = tangos_simulation.timesteps[-1].halos[0]
 
 ## Alternatively supply halonums, output names as arrays
@@ -38,6 +40,7 @@ output_names = np.array([tangos_simulation.timesteps[i].__dict__['extension'] fo
 ## alternatively, provide mstar (in units of solar masses) 
 t_darklight,z_darklight,vsmooth,sfh_insitu,mstar_snap_insitu,mstar_total = DarkLight(tangos_main_halo_object,DMO=True,mergers = False)
 stellar_mass_to_assign = mstar_snap_insitu[-1]
+
 
 # Loading-in the pynbody particle data for the last simulation snapshot 
 simulation_particles = pynbody.load(join('/vol/ph/astro_data/shared/morkney/EDGE/Halo1459_DMO',output_names[-1]))
@@ -58,9 +61,9 @@ script_array,array_to_write_to_output_file = ptag.angular_momentum_tagging.tag(p
 
 #particles_sorted_by_angmom = rank_order_particles_by_angmom(particles_in_virial_radius, tangos_main_halo_object)
 #selected_particles,array_to_write = assign_stars_to_particles(stellar_mass_to_assign,particles_sorted_by_angmom, free_parameter_value,[np.array([]),np.array([])])
+'''
 
-
-
+df_tagged_particles = ptag.angular_momentum_tagging.tag_over_full_sim(tangos_simulation)
 
 
 
