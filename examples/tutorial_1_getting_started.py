@@ -16,7 +16,7 @@ import sys
 import pandas as pd
 #from particle_tagging_package.tagging.angular_momentum_tagging import *
 
-import particle_tagging_package.tagging as ptag 
+import particle_tagging_package as ptag 
 
 
 # specify preference of halo catalog
@@ -63,10 +63,11 @@ script_array,array_to_write_to_output_file = ptag.angular_momentum_tagging.tag(p
 #selected_particles,array_to_write = assign_stars_to_particles(stellar_mass_to_assign,particles_sorted_by_angmom, free_parameter_value,[np.array([]),np.array([])])
 '''
 
-df_tagged_particles = ptag.angular_momentum_tagging.tag_over_full_sim(tangos_simulation)
+df_tagged_particles = ptag.tagging.angular_momentum_tagging.tag_over_full_sim(tangos_simulation)
 
+# change df_tagged_particles = ptag.tag_over_full_sim(tangos_simulation, method = 'angular momentum')
 
-
+# ptag.analysis.plotting, ptag.analysis.calculate 
 
 
 
