@@ -81,7 +81,7 @@ def get_child_iords(halo,halo_catalog,DMOstate='fiducial'):
 
 pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
 
-def tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_filename,AHF_centers_file=None,mergers = True,AHF_centers_supplied=False):
+def angmom_tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_filename,AHF_centers_file=None,mergers = True,AHF_centers_supplied=False):
 
     
     #used paths
@@ -528,8 +528,7 @@ def center_on_tagged(radial_dists,mass):
 
 
 
-
-def calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_file=None,from_file = False,from_dataframe=False,save_to_file=True,AHF_centers_supplied=False):
+def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_file=None,from_file = False,from_dataframe=False,save_to_file=True,AHF_centers_supplied=False):
     #used paths
     tangos_path_edge     = '/vol/ph/astro_data/shared/morkney/EDGE/tangos/'
     tangos_path_chimera  = '/vol/ph/astro_data/shared/etaylor/CHIMERA/'
