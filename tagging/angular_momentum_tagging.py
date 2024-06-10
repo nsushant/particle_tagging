@@ -85,7 +85,7 @@ def tag(DMOparticles, hDMO, snapshot_stellar_mass, free_param_value = 0.01, prev
     
 
 # under construction
-def tag_over_full_sim(DMOsim, fmb_percentage = 0.01, pynbody_path  = '/vol/ph/astro_data/shared/morkney/EDGE/', occupation_frac = 'all' ,particle_storage_filename=None, AHF_centers_file=None, mergers = True):
+def angmom_tag_over_full_sim(DMOsim, fmb_percentage = 0.01, pynbody_path  = '/vol/ph/astro_data/shared/morkney/EDGE/', occupation_frac = 'all' ,particle_storage_filename=None, AHF_centers_file=None, mergers = True):
   
     pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
 
