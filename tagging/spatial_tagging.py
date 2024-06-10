@@ -191,7 +191,7 @@ def get_bins(bins, binned_df, M_0, a, a_coeff, msp, red_all, t_all, i, insitu,sm
     return ch_parts_2,out_num,tgyr_of_choice,r_of_choice,p_typ,a_storage,m_storage
 
 
-def tag_over_full_sim(DMOsim, pynbody_path  = '/vol/ph/astro_data/shared/morkney/EDGE/', occupation_frac = 'all', particle_storage_filename=None, mergers=True):
+def spatial_tag_over_full_sim(DMOsim, pynbody_path  = '/vol/ph/astro_data/shared/morkney/EDGE/', occupation_frac = 'all', particle_storage_filename=None, mergers=True):
     
     # keeps count of the number of mergers
     mergers_count = 0
