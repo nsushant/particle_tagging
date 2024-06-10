@@ -36,7 +36,7 @@ def help():
 
 
 
-def tag_particles(sim_name_input,occupation_fraction,filename_for_run,mergers=True):
+def spatial_tag_particles(sim_name_input,occupation_fraction,filename_for_run,mergers=True):
     
     #used paths
     tangos_path_edge     = '/vol/ph/astro_data/shared/morkney/EDGE/tangos/'
@@ -459,7 +459,7 @@ def calc_3D_cm(particles,masses):
     return np.asarray([x_cm,y_cm,z_cm])
 
 
-def calculate_reffs(sim_name, particles_tagged,reffs_fname,from_file = False,from_dataframe=False,save_to_file=True):
+def spatial_calculate_reffs(sim_name, particles_tagged,reffs_fname,from_file = False,from_dataframe=False,save_to_file=True):
 
     if (from_file == from_dataframe):
         print('please specify whether particle data is to be read from file or dataframe')
