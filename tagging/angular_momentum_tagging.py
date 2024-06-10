@@ -85,7 +85,7 @@ def tag(DMOparticles, hDMO, snapshot_stellar_mass, free_param_value = 0.01, prev
     
 
 # under construction
-def tag_over_full_sim(DMOsim, fmb_percentage = 0.01, pynbody_path  = '/vol/ph/astro_data/shared/morkney/EDGE/', particle_storage_filename=None, AHF_centers_file=None, mergers = True):
+def tag_over_full_sim(DMOsim, fmb_percentage = 0.01, pynbody_path  = '/vol/ph/astro_data/shared/morkney/EDGE/', occupation_frac = 'all' ,particle_storage_filename=None, AHF_centers_file=None, mergers = True):
   
     pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
 
@@ -97,7 +97,7 @@ def tag_over_full_sim(DMOsim, fmb_percentage = 0.01, pynbody_path  = '/vol/ph/as
     t_all, red_all, main_halo,halonums,outputs = load_indexing_data(DMOsim,1)
     
     # Get stellar masses at each redshift using darklight for insitu tagging (mergers = False excludes accreted mass)
-    t,redshift,vsmooth,sfh_insitu,mstar_s_insitu,mstar_total = DarkLight(main_halo,DMO=True,mergers = False, poccupied='all')
+    t,redshift,vsmooth,sfh_insitu,mstar_s_insitu,mstar_total = DarkLight(main_halo,DMO=True,mergers = False, poccupied=occupation_frac)
 
     #calculate when the mergers took place and grab all the tangos halo objects involved in the merger (zmerge = merger redshift, hmerge = merging halo objects,qmerge = merger ratio)
     zmerge, qmerge, hmerge = get_mergers_of_major_progenitor(main_halo)
@@ -344,7 +344,7 @@ def tag_over_full_sim(DMOsim, fmb_percentage = 0.01, pynbody_path  = '/vol/ph/as
                         continue
                 
                 try:
-                    t_2,redshift_2,vsmooth_2,sfh_in2,mstar_in2,mstar_merging = DarkLight(hDM,DMO=True,poccupied='all',mergers=True)
+                    t_2,redshift_2,vsmooth_2,sfh_in2,mstar_in2,mstar_merging = DarkLight(hDM,DMO=True,poccupied=occupation_frac,mergers=True)
                     print(len(t_2))
                     print(mstar_merging)
                 except Exception as e :
