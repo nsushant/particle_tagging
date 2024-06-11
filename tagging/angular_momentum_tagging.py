@@ -3,6 +3,7 @@ import pandas as pd
 import darklight  
 import tangos 
 
+import gc
 from tangos.examples.mergers import * 
 
 from numpy import sqrt
