@@ -1,6 +1,9 @@
 import numpy as np 
 import pandas as pd 
 import darklight  
+import tangos 
+
+from tangos.examples.mergers import * 
 
 from numpy import sqrt
 import random
