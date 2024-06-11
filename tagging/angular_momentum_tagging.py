@@ -1,6 +1,7 @@
 import numpy as np 
 import pandas as pd 
 import darklight  
+from darklight import Darklight
 from numpy import sqrt
 import random
 import pynbody
