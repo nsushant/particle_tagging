@@ -311,7 +311,6 @@ def angmom_tag_over_full_sim(DMOsim, fmb_percentage = 0.01, pynbody_path  = '/vo
             selected_particles,array_to_write = assign_stars_to_particles(mass_select,particles_sorted_by_angmom,float(fmb_percentage),selected_particles = selected_particles)
             #halonums_indexing+=1
             
-            writer = csv.writer(particle_storage_file)
             
             print('writing insitu particles to output file')
             
@@ -432,7 +431,7 @@ def angmom_tag_over_full_sim(DMOsim, fmb_percentage = 0.01, pynbody_path  = '/vo
 
                     selected_particles,array_to_write_accreted = assign_stars_to_particles(mass_select_merge,accreted_particles_sorted_by_angmom,float(fmb_percentage),selected_particles = selected_particles)
                     
-                    writer = csv.writer(particle_storage_file)
+                    
 
                     tagged_iords_to_write = np.append(tagged_iords_to_write,array_to_write_accreted[0])
                     tagged_types_to_write = np.append(tagged_types_to_write,np.repeat('accreted',len(array_to_write_accreted[0])))
