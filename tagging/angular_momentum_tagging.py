@@ -1,9 +1,22 @@
+
+import csv
+import os
+import pynbody
+import tangos
+import numpy as np
+from numpy import sqrt
+
+from os import listdir
+from os.path import *
+import sys
+
 import numpy as np 
 import pandas as pd 
-import darklight  
+
+from darklight import DarkLight
+
 import tangos 
 
-import gc
 from tangos.examples.mergers import * 
 
 from numpy import sqrt
@@ -102,7 +115,7 @@ def angmom_tag_over_full_sim(DMOsim, fmb_percentage = 0.01, pynbody_path  = '/vo
     t_all, red_all, main_halo,halonums,outputs = load_indexing_data(DMOsim,1)
     
     # Get stellar masses at each redshift using darklight for insitu tagging (mergers = False excludes accreted mass)
-    t,redshift,vsmooth,sfh_insitu,mstar_s_insitu,mstar_total = darklight.DarkLight(main_halo,DMO=True,mergers = False, poccupied=occupation_frac)
+    t,redshift,vsmooth,sfh_insitu,mstar_s_insitu,mstar_total = DarkLight(main_halo,DMO=True,mergers = False, poccupied=occupation_frac)
 
     #calculate when the mergers took place and grab all the tangos halo objects involved in the merger (zmerge = merger redshift, hmerge = merging halo objects,qmerge = merger ratio)
     zmerge, qmerge, hmerge = get_mergers_of_major_progenitor(main_halo)
@@ -349,7 +362,7 @@ def angmom_tag_over_full_sim(DMOsim, fmb_percentage = 0.01, pynbody_path  = '/vo
                         continue
                 
                 try:
-                    t_2,redshift_2,vsmooth_2,sfh_in2,mstar_in2,mstar_merging = darklight.DarkLight(hDM,DMO=True,poccupied=occupation_frac,mergers=True)
+                    t_2,redshift_2,vsmooth_2,sfh_in2,mstar_in2,mstar_merging = DarkLight(hDM,DMO=True,poccupied=occupation_frac,mergers=True)
                     print(len(t_2))
                     print(mstar_merging)
                 except Exception as e :
