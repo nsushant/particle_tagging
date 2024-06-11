@@ -131,7 +131,7 @@ def angmom_tag_over_full_sim(DMOsim, fmb_percentage = 0.01, pynbody_path  = '/vo
     insitu_only_particle_ids = np.array([])
 
     # if an AHF centering file is provided use the centers stroed within it
-    AHF_centers = pd.read_csv(str(AHF_centers_file)) if AHF_centers_supplied == True else None
+    AHF_centers = pd.read_csv(str(AHF_centers_file)) if AHF_centers_file != None else None
 
     tagged_iords_to_write = np.array([])
     tagged_types_to_write = np.array([])
