@@ -349,9 +349,9 @@ def angmom_tag_over_full_sim(DMOsim, fmb_percentage = 0.01, pynbody_path  = '/vo
                 gc.collect()
                 print('halo:',hDM)
             
-                if (occupation_fraction != 'all'):
+                if (occupation_frac != 'all'):
                     try:
-                        prob_occupied = calculate_poccupied(hDM,occupation_fraction)
+                        prob_occupied = calculate_poccupied(hDM,occupation_frac)
 
                     except Exception as e:
                         print(e)
