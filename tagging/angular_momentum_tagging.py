@@ -6,6 +6,8 @@ import tangos
 import numpy as np
 from numpy import sqrt
 
+import gc
+
 from os import listdir
 from os.path import *
 import sys
