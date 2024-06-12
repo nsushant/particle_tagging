@@ -225,7 +225,7 @@ def spatial_tag_over_full_sim(DMOsim, pynbody_path  = '/vol/ph/astro_data/shared
     # iterating over all the simulations in the 'sims' list
    
     #darklight stellar masses used for the selection of insitu particles
-    t,redshift,vsmooth,sfh_insitu,mstar_s_insitu,mstar_total = DarkLight(main_halo,DMO=True,mergers=False,poccupied=occupation_fraction)
+    t,redshift,vsmooth,sfh_insitu,mstar_s_insitu,mstar_total = DarkLight(main_halo,DMO=True,mergers=False,poccupied=occupation_frac)
     
     #calculate when the mergers took place (zmerge) and grab all the halo objects involved in the merger (hmerge)
     zmerge, qmerge, hmerge = get_mergers_of_major_progenitor(main_halo)
@@ -425,7 +425,7 @@ def spatial_tag_over_full_sim(DMOsim, pynbody_path  = '/vol/ph/astro_data/shared
                                                                                                                                                                         
                 try:
                     # loading in the properties of the halo from darklight as above
-                    t_2,redshift_2,vsmooth_2,sfh_in2,mstar_in2,mstar_merging = DarkLight(hDM,DMO=True,mergers=True,poccupied=occupation_fraction)
+                    t_2,redshift_2,vsmooth_2,sfh_in2,mstar_in2,mstar_merging = DarkLight(hDM,DMO=True,mergers=True,poccupied=occupation_frac)
                     print(len(mstar_merging))
                     
                 except Exception as e :
