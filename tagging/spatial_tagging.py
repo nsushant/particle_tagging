@@ -31,13 +31,16 @@ import random
 
 
 def rhalf2D_dm(particles):
-    #Calculate radius that encloses half the given particles.
+    '''
+    
+    Calculates radius that encloses half the given particles.
 
-    #Assumes each particle positions have been centered on main halo.  Adopts
-    #same 'luminosity' for each particle.  Creates list of projected distances
-    #from halo center (as seen from the z-axis), sorts this to get the distances
-    #in increasing order, then choses the distance that encloses half the particles.
-
+    Assumes each particle positions have been centered on main halo.  Adopts
+    same 'luminosity' for each particle.  Creates list of projected distances
+    from halo center (as seen from the z-axis), sorts this to get the distances
+    in increasing order, then choses the distance that encloses half the particles.
+    
+    '''
     rproj = np.sqrt(particles['x']**2 + particles['y']**2)
     rproj.sort()
     if round(len(particles)/2)>0:
@@ -48,10 +51,14 @@ def rhalf2D_dm(particles):
 
 def get_mass(m,a,r1,r2):
 
-    # calculates the mass enclosed at distances r1 and r2 
-    # from the center of the main halo 
-    # according to the plummer profile 
+    '''
+    
+    calculates the mass enclosed at distances r1 and r2 
+    from the center of the main halo 
+    according to the plummer profile 
 
+    '''
+    
     x1 = m*(r1**3)/((r1**2+a**2)**(3.0/2.0))
     x2 = m*(r2**3)/((r2**2+a**2)**(3.0/2.0))
     return x2-x1
@@ -59,6 +66,14 @@ def get_mass(m,a,r1,r2):
 
 
 def plum_const(hDMO,z_val,insitu,r200):
+    
+    '''
+    
+    calculates the value of the Plummer constant based on 
+    the given simulation redshift and halo virial radius. 
+    
+    '''
+    
     if insitu == 'insitu':
         return ((0.015*r200)/1.3) if z_val > 4 else ((10**(0.1*r200 - 4.2))/1.3)
     else:
@@ -68,6 +83,12 @@ def plum_const(hDMO,z_val,insitu,r200):
 
 
 def prod_binned_df(z_val, mstar, mass_select, chosen_parts, DMOparticles, hDMO,insitu,a_coeff,r200):
+
+    '''
+    
+    Log bins particles located at radial distances of < 10 * Plummer radius according to their spatial positions. 
+    
+    '''
 
     print('this is how many',len(DMOparticles))
     
@@ -104,12 +125,6 @@ def prod_binned_df(z_val, mstar, mass_select, chosen_parts, DMOparticles, hDMO,i
     # get 3d pos vec magnitude array 
     R_dists = get_dist(positions_of_parts)
 
-    #if insitu == 'insitu':
-    #   num_of_bins = int(mstar/(1112*40)) if int(mstar/(1112*40))>5 else 5
-
-    #elif insitu == 'accreted':
-    #decide on the number of bins based on mstar 
-    #   num_of_bins = int(mstar[-1]/(1112*40)) if int(mstar[-1]/(1112*40))>5 else 5 
     num_of_bins=5      
     #generate log-spaced bins 
     bins = np.logspace(np.log10(min(R_dists)),np.log10(max(R_dists)),num=num_of_bins,base=10)
@@ -134,7 +149,14 @@ def prod_binned_df(z_val, mstar, mass_select, chosen_parts, DMOparticles, hDMO,i
 
 
 def get_bins(bins, binned_df, M_0, a, a_coeff, msp, red_all, t_all, i, insitu,sm):
-   
+
+    '''
+    
+    Given a binned dataframe (containing particles binned by position), the function 
+    associates stellar mass with dm particles by using the Plummer Profile 
+    to calculate the stellar mass growth at each binned distance. 
+    
+    '''
 
     ch_parts_2 = np.array([])
     out_num = np.array([])
@@ -215,6 +237,13 @@ def get_bins(bins, binned_df, M_0, a, a_coeff, msp, red_all, t_all, i, insitu,sm
 
 
 def spatial_tag_over_full_sim(DMOsim, pynbody_path  = '/vol/ph/astro_data/shared/morkney/EDGE/', occupation_frac = 'all', particle_storage_filename=None, mergers=True):
+
+    '''
+
+    Given a tangos simulation, the function tags particles with stellar mass based on the Plummer profile in each snapshot. 
+    In doing so it 'grows' the tagged stellar population over the full simulation. 
+
+    '''
     
     # keeps count of the number of mergers
     mergers_count = 0
