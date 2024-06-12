@@ -412,7 +412,7 @@ def spatial_tag_over_full_sim(DMOsim, pynbody_path  = '/vol/ph/astro_data/shared
 
                 if (np.isin('dm_mass_profile',hDM.keys())):
                     
-                    prob_occupied = calculate_poccupied(hDM,occupation_fraction)
+                    prob_occupied = calculate_poccupied(hDM,occupation_frac)
                     print('successfully calculated poccupied')
                     
                 else:
