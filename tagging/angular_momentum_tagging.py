@@ -28,6 +28,12 @@ from .utils import *
 
 def rank_order_particles_by_angmom(DMOparticles, hDMO):
     
+    '''
+
+    returns a list of particles that is ordered by angular momentum 
+    
+    '''
+    
     print('this is how many DMOparticles were passed',len(DMOparticles))
     
     print('r200',hDMO['r200c'])
@@ -51,6 +57,11 @@ def rank_order_particles_by_angmom(DMOparticles, hDMO):
 def assign_stars_to_particles(snapshot_stellar_mass,particles_sorted_by_angmom,most_bound_fraction,selected_particles = [np.array([]),np.array([])]):
     
     '''
+
+    Tags the lowest angular momenta dark matter particles of a halo with stellar mass. 
+    
+    Returns: 
+    
     selected_particles is a 2d array with rows = 2, cols = num of particles  
     
     selected_particles[0] = iords
@@ -98,7 +109,12 @@ def assign_stars_to_particles(snapshot_stellar_mass,particles_sorted_by_angmom,m
 
 
 def tag(DMOparticles, hDMO, snapshot_stellar_mass, free_param_value = 0.01, previously_tagged_particles = [np.array([]),np.array([])]):
+
+    '''
     
+    Given the dark matter particles and the associated tangos halo object, the function performs particle tagging based on angular momentum 
+    
+    '''
     particles_ordered_by_angmom = rank_order_particles_by_angmom(DMOparticles, hDMO)
 
     return assign_stars_to_particles(snapshot_stellar_mass,particles_sorted_by_angmom, free_param_value, selected_particles = previously_tagged_particles)
@@ -106,7 +122,17 @@ def tag(DMOparticles, hDMO, snapshot_stellar_mass, free_param_value = 0.01, prev
 
 # under construction
 def angmom_tag_over_full_sim(DMOsim, fmb_percentage = 0.01, pynbody_path  = '/vol/ph/astro_data/shared/morkney/EDGE/', occupation_frac = 'all' ,particle_storage_filename=None, AHF_centers_file=None, mergers = True):
-  
+
+    '''
+
+    Given a tangos simulation, the function performs angular momentum based tagging over the full simulation. 
+
+    Returns: 
+    
+    dataframe with tagged particle masses at given times, redshifts and associated particle IDs  
+    
+    '''
+    
     pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
 
     # path to particle data 
