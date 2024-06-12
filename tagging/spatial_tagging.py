@@ -219,7 +219,7 @@ def spatial_tag_over_full_sim(DMOsim, pynbody_path  = '/vol/ph/astro_data/shared
     # keeps count of the number of mergers
     mergers_count = 0
     simname = DMOsim.path
-
+    
     t_all, red_all, main_halo,halonums,outputs = load_indexing_data(DMOsim,1)
     
     # iterating over all the simulations in the 'sims' list
@@ -287,7 +287,7 @@ def spatial_tag_over_full_sim(DMOsim, pynbody_path  = '/vol/ph/astro_data/shared
 
       
         # load the main tangos halo object
-        hDMO = tangos.get_halo(DMOname+'/'+outputs[i]+'/halo_'+str(halonums[i]))
+        hDMO = tangos.get_halo(simname+'/'+outputs[i]+'/halo_'+str(halonums[i]))
 
         # value of redshift at the current timestep
         z_val = red_all[i]
@@ -297,7 +297,7 @@ def spatial_tag_over_full_sim(DMOsim, pynbody_path  = '/vol/ph/astro_data/shared
         np_round_to_6 = np.round(np.array(abs(redshift)), 6)
       
         # generate path to snapshot 
-        simfn = join(pynbody_path,DMOname,outputs[i])
+        simfn = join(pynbody_path,simname,outputs[i])
 
         # here t = darklight time array , t_val = time associated with current snapshot 
         idrz = np.argmin(abs(t - t_val))
