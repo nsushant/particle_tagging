@@ -1,39 +1,40 @@
 # import statements 
 
-import csv
-import os
 import pynbody
 import tangos
-import numpy as np
-from numpy import sqrt
-from darklight import DarkLight
-import darklight
-from os import listdir
-from os.path import *
-import gc
-import random
-import sys
-import pandas as pd
-#from particle_tagging_package.tagging.angular_momentum_tagging import *
 
 import particle_tagging_package as ptag 
-
+import matplotlib.pyplot as plt 
 
 # specify preference of halo catalog
+# if you're working with a single halo catalogue this step sin't required 
+
 pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
     
 # Loading-in the tangos data 
-## tangos database initialization
-tangos.core.init_db('/vol/ph/astro_data/shared/morkney/EDGE/tangos/Halo1459.db')
+## tangos database initialization - assumes that the .db file is in the current working directory 
+tangos.core.init_db('Halo1459.db')
 
-## loading in the simulation data  
-tangos_simulation = tangos.get_simulation('Halo1459_DMO')
+## loading in the simulation database  
+DMO_database = tangos.get_simulation('Halo1459_DMO')
 
-df_tagged_particles = ptag.tag_particles(tangos_simulation, method = 'angular momentum')
+# angular momentum based particle tagging 
+df_tagged_particles = ptag.tag_particles(DMO_database , path_to_particle_data = 'Paticle_Data/1459_DMO', method = 'angular momentum', free_param_val = 0.01)
 
-# change df_tagged_particles = ptag.tag_over_full_sim(tangos_simulation, method = 'angular momentum')
+# calculate half-mass radii of the tagged stellar populations
+df_half_mass_tagged = ptag.calculate_rhalf(DMOsim, data_particles_tagged, pynbody_path  = 'Paticle_Data/1459_DMO', AHF_centers_file = None)
 
-# ptag.analysis.plotting, ptag.analysis.calculate 
+# Plotting half-mass radii from tagged populations Vs R_effective from Hydro sims. 
+# HYDRO simulation database 
+DMO_database = tangos.get_simulation('Halo1459_fiducial')
+
+halflight_hydro,time_array_hydro = DMO_database.timesteps[-1].halos[0].calculate_for_progenitors('stellar_projected_halflight', 't()')
+
+plt.plot(df_half_mass_tagged['t'],df_half_mass_tagged['reff'],label='Half-mass (tagged)')
+plt.plot(time_array_hydro , halflight_hydro , label='Half-light (HYDRO)')
+plt.xlabel('Time in Gyr')
+plt.ylabel('Radii in kpc')
+
 
 
 
