@@ -125,7 +125,7 @@ def assign_stars_to_particles(snapshot_stellar_mass,particles_sorted_by_angmom,t
     
 
 
-def tag(DMOparticles, hDMO, snapshot_stellar_mass, free_param_value = 0.01, previously_tagged_particles = [np.array([]),np.array([])]):
+def tag(DMOparticles, hDMO, snapshot_stellar_mass,free_param_value = 0.01, previously_tagged_particles = [np.array([]),np.array([])]):
 
     '''
     
@@ -156,7 +156,7 @@ def tag(DMOparticles, hDMO, snapshot_stellar_mass, free_param_value = 0.01, prev
     
 
 # under construction
-def angmom_tag_over_full_sim(DMOsim, free_param_value = 0.01, pynbody_path  = '/vol/ph/astro_data/shared/morkney/EDGE/', occupation_frac = 'all' ,particle_storage_filename=None, AHF_centers_file=None, mergers = True):
+def angmom_tag_over_full_sim(DMOsim, free_param_value = 0.01, pynbody_path  = None, occupation_frac = 'all' ,particle_storage_filename=None, AHF_centers_file=None, mergers = True):
 
     '''
 
@@ -284,7 +284,7 @@ def angmom_tag_over_full_sim(DMOsim, free_param_value = 0.01, pynbody_path  = '/
             # try to load in the data from this snapshot
             
             try:
-                simfn = join(pynbody_path,DMOname,outputs[i])
+                simfn = join(pynbody_path,outputs[i])
                 
                 print(simfn)
                 print('loading in DMO particles')
@@ -455,7 +455,7 @@ def angmom_tag_over_full_sim(DMOsim, free_param_value = 0.01, pynbody_path  = '/
                     leftover+=mstar_merging[-1]
                     continue
                 
-                simfn = join(pynbody_path,DMOname,outputs[i])
+                simfn = join(pynbody_path, outputs[i])
 
                 if float(mass_select_merge) >0 and decision2==True:
                     # try to load in the data from this snapshot
@@ -530,7 +530,7 @@ def angmom_tag_over_full_sim(DMOsim, free_param_value = 0.01, pynbody_path  = '/
     return df_tagged_particles
 
 
-def angmom_calculate_reffs_over_full_sim(DMOsim, data_particles_tagged, pynbody_path  = '/vol/ph/astro_data/shared/morkney/EDGE/' , AHF_centers_file=None):
+def angmom_calculate_reffs_over_full_sim(DMOsim, data_particles_tagged, pynbody_path  = None , AHF_centers_file = None):
 
     '''
 
@@ -614,7 +614,7 @@ def angmom_calculate_reffs_over_full_sim(DMOsim, data_particles_tagged, pynbody_
         print(hDMO)
             
         #for  the given path,entry,snapshot at given index generate a string that includes them
-        simfn = join(pynbody_path,DMOname,outputs[i])
+        simfn = join(pynbody_path,outputs[i])
         
         # try to load in the data from this snapshot
         try:  DMOparticles = pynbody.load(simfn)
