@@ -7,7 +7,9 @@ import particle_tagging_package as ptag
 import matplotlib.pyplot as plt 
 
 # specify preference of halo catalog
-# if you're working with a single halo catalogue this step sin't required 
+
+# if you're working with a single halo catalogue this step can be omitted
+# the HOP catalogue used here is 0 indexed
 
 pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
     
