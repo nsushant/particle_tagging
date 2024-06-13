@@ -26,9 +26,9 @@ df_half_mass_tagged = ptag.calculate_rhalf(DMO_database, data_particles_tagged, 
 
 # Plotting half-mass radii from tagged populations Vs R_effective from Hydro sims. 
 # HYDRO simulation database 
-DMO_database = tangos.get_simulation('Halo1459_fiducial')
+HYDRO_database = tangos.get_simulation('Halo1459_fiducial')
 
-halflight_hydro,time_array_hydro = DMO_database.timesteps[-1].halos[0].calculate_for_progenitors('stellar_projected_halflight', 't()')
+halflight_hydro,time_array_hydro = HYDRO_database.timesteps[-1].halos[0].calculate_for_progenitors('stellar_projected_halflight', 't()')
 
 plt.plot(df_half_mass_tagged['t'],df_half_mass_tagged['reff'],label='Half-mass (tagged)')
 plt.plot(time_array_hydro , halflight_hydro , label='Half-light (HYDRO)')
