@@ -29,8 +29,15 @@ from .utils import *
 def rank_order_particles_by_angmom(DMOparticles, hDMO):
     
     '''
+    Inputs: 
 
-    returns a list of particles that is ordered by angular momentum 
+    DMOparticles - Particle data (angular momenta and positions) 
+    hDMO - Tangos halo object for the main halo
+    
+    
+    Returns: 
+    
+    a list of particle IDs ordered by their corresponding angular momenta.
     
     '''
     
@@ -54,11 +61,19 @@ def rank_order_particles_by_angmom(DMOparticles, hDMO):
 
 
 
-def assign_stars_to_particles(snapshot_stellar_mass,particles_sorted_by_angmom,most_bound_fraction,selected_particles = [np.array([]),np.array([])]):
+def assign_stars_to_particles(snapshot_stellar_mass,particles_sorted_by_angmom,tagging_fraction,selected_particles = [np.array([]),np.array([])]):
     
     '''
 
     Tags the lowest angular momenta dark matter particles of a halo with stellar mass. 
+
+    Inputs: 
+    
+    snapshot_stellar_mass - stellar mass to be tagged in given snapshot 
+    particles_sorted_by_angmom - list of particle dark matter IDs sorted by their angular momenta. 
+    tagging_fraction - defines the size of the free paramter used to perform tagging 
+    selected_particles - particle IDs of previously selected/tagged particles
+    
     
     Returns: 
     
@@ -66,39 +81,41 @@ def assign_stars_to_particles(snapshot_stellar_mass,particles_sorted_by_angmom,m
     
     selected_particles[0] = iords
     selected_particles[1] = stellar mass
+
+    updates_to_arrays = array updates that need to be written to an output file 
     
     '''
     
-    size_of_most_bound_fraction = int(particles_sorted_by_angmom.shape[0]*most_bound_fraction)
+    size_of_tagging_fraction = int(particles_sorted_by_angmom.shape[0]*tagging_fraction)
     
-    particles_in_most_bound_fraction = particles_sorted_by_angmom[:size_of_most_bound_fraction]
+    particles_in_tagging_fraction = particles_sorted_by_angmom[:size_of_tagging_fraction]
     
     #dividing stellar mass evenly over all the particles in the most bound fraction 
 
     print('assigning stellar mass')
     
-    stellar_mass_assigned = float(snapshot_stellar_mass/len(list(particles_in_most_bound_fraction))) if len(list(particles_in_most_bound_fraction))>0 else 0
+    stellar_mass_assigned = float(snapshot_stellar_mass/len(list(particles_in_tagging_fraction))) if len(list(particles_in_tagging_fraction))>0 else 0
     
     #check if particles have been selected before 
     
-    idxs_previously_selected = np.where(np.isin(selected_particles[0],particles_in_most_bound_fraction)==True)
+    idxs_previously_selected = np.where(np.isin(selected_particles[0],particles_in_tagging_fraction)==True)
     
-    selected_particles[1] = np.where(np.isin(selected_particles[0],particles_in_most_bound_fraction)==True,selected_particles[1]+stellar_mass_assigned,selected_particles[1]) 
+    selected_particles[1] = np.where(np.isin(selected_particles[0],particles_in_tagging_fraction)==True,selected_particles[1]+stellar_mass_assigned,selected_particles[1]) 
     
     #if not selected previously, add to array
     
-    idxs_not_previously_selected = np.where(np.isin(particles_in_most_bound_fraction,selected_particles[0])==False)
+    idxs_not_previously_selected = np.where(np.isin(particles_in_tagging_fraction,selected_particles[0])==False)
 
-    how_many_not_previously_selected = particles_in_most_bound_fraction[idxs_not_previously_selected].shape[0]
+    how_many_not_previously_selected = particles_in_tagging_fraction[idxs_not_previously_selected].shape[0]
     
-    selected_particles_new_iords = np.append(selected_particles[0],particles_in_most_bound_fraction[idxs_not_previously_selected])
+    selected_particles_new_iords = np.append(selected_particles[0],particles_in_tagging_fraction[idxs_not_previously_selected])
     
     selected_particles_new_masses = np.append(selected_particles[1],np.repeat(stellar_mass_assigned,how_many_not_previously_selected))
 
     
     selected_particles = np.array([selected_particles_new_iords,selected_particles_new_masses])
 
-    array_iords = np.append(selected_particles[0][idxs_previously_selected], particles_in_most_bound_fraction[idxs_not_previously_selected])
+    array_iords = np.append(selected_particles[0][idxs_previously_selected], particles_in_tagging_fraction[idxs_not_previously_selected])
 
     array_masses = np.append(selected_particles[1][idxs_previously_selected],np.repeat(stellar_mass_assigned,how_many_not_previously_selected))
 
@@ -113,6 +130,24 @@ def tag(DMOparticles, hDMO, snapshot_stellar_mass, free_param_value = 0.01, prev
     '''
     
     Given the dark matter particles and the associated tangos halo object, the function performs particle tagging based on angular momentum 
+
+    Inputs:
+
+    DMOparticles - Particle data (angular momenta, positions, IDs) 
+    hDMO - Tangos halo object of main halo 
+    snapshot_stellar_mass - stellar mass to be tagged in current snapshot 
+    free_param_value - specifies the size of the 'tagging fraction' when tagging dm particles with stellar mass (bigger values correspond to a larger spread of angmom.)
+    previously_tagged_particles - particle IDs of any previously tagged particles 
+
+    Returns: 
+    
+    selected_particles is a 2d array with rows = 2, cols = num of particles  
+    
+    selected_particles[0] = iords
+    selected_particles[1] = stellar mass
+
+    updates_to_arrays = array updates that need to be written to an output file 
+    
     
     '''
     particles_ordered_by_angmom = rank_order_particles_by_angmom(DMOparticles, hDMO)
@@ -121,12 +156,20 @@ def tag(DMOparticles, hDMO, snapshot_stellar_mass, free_param_value = 0.01, prev
     
 
 # under construction
-def angmom_tag_over_full_sim(DMOsim, fmb_percentage = 0.01, pynbody_path  = '/vol/ph/astro_data/shared/morkney/EDGE/', occupation_frac = 'all' ,particle_storage_filename=None, AHF_centers_file=None, mergers = True):
+def angmom_tag_over_full_sim(DMOsim, free_param_value = 0.01, pynbody_path  = '/vol/ph/astro_data/shared/morkney/EDGE/', occupation_frac = 'all' ,particle_storage_filename=None, AHF_centers_file=None, mergers = True):
 
     '''
 
     Given a tangos simulation, the function performs angular momentum based tagging over the full simulation. 
 
+    Inputs: 
+
+    DMOsim - tangos simulation 
+    free_param_value - specifies the size of the 'tagging fraction' when tagging dm particles with stellar mass (bigger values correspond to a larger spread of angmom.)
+    pynbody_path - path to particle data 
+    occupation_frac - One of 'nadler20' , 'all' , 'edge1' or 'edgert' (controls the occupation regime followed by darklight)
+    mergers - Whether to include merging/accreting halos or not. 
+    
     Returns: 
     
     dataframe with tagged particle masses at given times, redshifts and associated particle IDs  
@@ -334,7 +377,7 @@ def angmom_tag_over_full_sim(DMOsim, fmb_percentage = 0.01, pynbody_path  = '/vo
             if particles_sorted_by_angmom.shape[0] == 0:
                 continue
             
-            selected_particles,array_to_write = assign_stars_to_particles(mass_select,particles_sorted_by_angmom,float(fmb_percentage),selected_particles = selected_particles)
+            selected_particles,array_to_write = assign_stars_to_particles(mass_select,particles_sorted_by_angmom,float(free_param_value),selected_particles = selected_particles)
             #halonums_indexing+=1
             
             
@@ -455,7 +498,7 @@ def angmom_tag_over_full_sim(DMOsim, fmb_percentage = 0.01, pynbody_path  = '/vo
         
                     print('assinging stars to accreted particles')
 
-                    selected_particles,array_to_write_accreted = assign_stars_to_particles(mass_select_merge,accreted_particles_sorted_by_angmom,float(fmb_percentage),selected_particles = selected_particles)
+                    selected_particles,array_to_write_accreted = assign_stars_to_particles(mass_select_merge,accreted_particles_sorted_by_angmom,float(free_param_value),selected_particles = selected_particles)
                     
                     
 
