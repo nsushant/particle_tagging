@@ -2,7 +2,7 @@ from .spatial_tagging import *
 from .angular_momentum_tagging import *
 
 
-def tag_particles(DMO_database, path_to_particle_data = '/vol/ph/astro_data/shared/morkney/EDGE/1459_DMO', tagging_method = 'angular momentum', free_param_val = 0.01, include_mergers = True, darklight_occupation_frac = 'all' ):
+def tag_particles(DMO_database, path_to_particle_data = None, tagging_method = 'angular momentum', free_param_val = 0.01, include_mergers = True, darklight_occupation_frac = 'all' ):
     
     if tagging_method == 'angular momentum':
       
