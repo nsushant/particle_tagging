@@ -16,3 +16,9 @@ def tag_particles(DMO_database, path_to_particle_data = None, tagging_method = '
 
     return df_tagged
 
+
+def calculate_rhalf(DMOsim, data_particles_tagged, pynbody_path  = None , AHF_centers_file = None): 
+
+    return calculate_reffs_over_full_sim( DMOsim, data_particles_tagged, pynbody_path  = pynbody_path , AHF_centers_file = None)
+
+    
