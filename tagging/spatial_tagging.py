@@ -236,7 +236,7 @@ def get_bins(bins, binned_df, M_0, a, a_coeff, msp, red_all, t_all, i, insitu,sm
     return ch_parts_2,out_num,tgyr_of_choice,r_of_choice,p_typ,a_storage,m_storage
 
 
-def spatial_tag_over_full_sim(DMOsim, pynbody_path  = '/vol/ph/astro_data/shared/morkney/EDGE/', occupation_frac = 'all', particle_storage_filename=None, mergers=True):
+def spatial_tag_over_full_sim(DMOsim, pynbody_path  = None, occupation_frac = 'all', particle_storage_filename=None, mergers=True):
 
     '''
 
@@ -326,7 +326,7 @@ def spatial_tag_over_full_sim(DMOsim, pynbody_path  = '/vol/ph/astro_data/shared
         np_round_to_6 = np.round(np.array(abs(redshift)), 6)
       
         # generate path to snapshot 
-        simfn = join(pynbody_path,simname,outputs[i])
+        simfn = join(pynbody_path, outputs[i])
 
         # here t = darklight time array , t_val = time associated with current snapshot 
         idrz = np.argmin(abs(t - t_val))
