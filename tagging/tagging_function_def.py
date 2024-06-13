@@ -6,7 +6,7 @@ def tag_particles(DMOsim, path_to_particle_data = '/vol/ph/astro_data/shared/mor
     
     if tagging_method == 'angular momentum':
       
-      df_tagged = angmom_tag_over_full_sim(DMOsim, fmb_percentage = free_param_val, pynbody_path  = path_to_particle_data, occupation_frac = darklight_occupation_frac, mergers = include_mergers)
+      df_tagged = angmom_tag_over_full_sim(DMOsim, free_param_value = free_param_val, pynbody_path  = path_to_particle_data, occupation_frac = darklight_occupation_frac, mergers = include_mergers)
       
 
     if tagging_method == 'spatial' : 
