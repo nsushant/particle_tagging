@@ -16,14 +16,17 @@ mpl.rcParams.update({'text.usetex': False})
 pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
 
 
-def edge_plot_tagged_vs_hydro_mass_dist(name_of_DMO_simulation, name_of_HYDRO_simulation, file_with_tagged_particles, time_to_plot, plot_type='2D Mass Distribution'):
+def edge_plot_tagged_vs_hydro_mass_dist(name_of_DMO_simulation, name_of_HYDRO_simulation, file_with_tagged_particles, time_to_plot, plot_type='2D Mass Distribution',label=None):
     
     tangos_path     = '/vol/ph/astro_data/shared/morkney/EDGE/tangos/'
     pynbody_path    = '/vol/ph/astro_data/shared/morkney/EDGE/'
     
     # finding mass distribution of tagged particles in DMO simulation 
+    
+    tangos.core.init_db(tangos_path+'Halo1459.db') 
 
-    DMOsim, main_halo, halonums, outputs = load_indexing_data(name_of_DMO_simulation,1)
+    DMOsim = tangos.get_simulation('Halo1459_DMO')
+    t_all,red_all,main_halo, halonums, outputs = load_indexing_data(DMOsim,1)
 
     times_tangos = main_halo.calculate_for_progenitors('t()')[0][::-1]
     
@@ -67,7 +70,8 @@ def edge_plot_tagged_vs_hydro_mass_dist(name_of_DMO_simulation, name_of_HYDRO_si
     
     # plotting hydro particles 
 
-    sim, HYDRO_main_halo, HYDRO_halonums, outputs_HYDRO = load_indexing_data(name_of_HYDRO_simulation,1)
+    sim = tangos.get_simulation('Halo1459_fiducial')
+    t_all_H,red_all_h, HYDRO_main_halo, HYDRO_halonums, outputs_HYDRO = load_indexing_data(sim,1)
     
     times_tangos_HYDRO = HYDRO_main_halo.calculate_for_progenitors('t()')[0][::-1]
 
@@ -102,17 +106,17 @@ def edge_plot_tagged_vs_hydro_mass_dist(name_of_DMO_simulation, name_of_HYDRO_si
       plt.xlim(4,-4)
       plt.ylim(4,-4)
 
-      plt.title(str(name_of_HYDRO_simulation)+"t = "+str(time_to_plot))
+      plt.title(str(name_of_HYDRO_simulation))
   
     if plot_type == '1D Mass Enclosed':
       
-      plt.plot(dataframe_for_hist['r'].values,dataframe_for_hist['m_enclosed'].values)
+      plt.plot(dataframe_for_hist['r'].values,dataframe_for_hist['m_enclosed'].values, label=label)
     
       plt.xlim(0,1)
 
       plt.yscale('log')
 
-      plt.title(str(name_of_HYDRO_simulation)+"t = "+str(time_to_plot))
+      plt.title(str(name_of_HYDRO_simulation))
       
       plt.ylabel(' $M_{star}(<r)$ in $M_{\odot}$')
       plt.xlabel('Radial Distance in Kpc')
@@ -125,7 +129,7 @@ def edge_plot_tagged_vs_hydro_mass_dist(name_of_DMO_simulation, name_of_HYDRO_si
 
       plt.yscale('log')
 
-      plt.title(str(name_of_HYDRO_simulation)+"t = "+str(time_to_plot))
+      plt.title(str(name_of_HYDRO_simulation))
       
       plt.ylabel('Stellar Mass in $M_{\odot}$')
       plt.xlabel('Radial Distance in Kpc')
