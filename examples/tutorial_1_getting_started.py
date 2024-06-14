@@ -24,7 +24,7 @@ DMO_database = tangos.get_simulation('Halo1459_DMO')
 df_tagged_particles = ptag.tag_particles(DMO_database , path_to_particle_data = 'Paticle_Data/1459_DMO', method = 'angular momentum', free_param_val = 0.01)
 
 # calculate half-mass radii of the tagged stellar populations
-df_half_mass_tagged = ptag.calculate_rhalf(DMO_database, data_particles_tagged, pynbody_path  = 'Paticle_Data/1459_DMO', AHF_centers_file = None)
+df_half_mass_tagged = ptag.calculate_rhalf(DMO_database, df_tagged_particles, pynbody_path  = 'Paticle_Data/1459_DMO')
 
 # Plotting half-mass radii from tagged populations Vs R_effective from Hydro sims. 
 # HYDRO simulation database 
