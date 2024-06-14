@@ -120,6 +120,7 @@ def edge_plot_tagged_vs_hydro_mass_dist(name_of_DMO_simulation, name_of_HYDRO_si
       #plt.xlim(0,1)
 
       plt.yscale('log')
+      plt.xscale('log')
 
       plt.title(str(name_of_HYDRO_simulation))
       
@@ -199,12 +200,12 @@ def plot_tagged_vs_hydro_mass_dist(DMO_halo_particles, HYDRO_halo_particles, fil
       plt.title(str(name_of_HYDRO_simulation)+"t = "+str(time_to_plot))
   
     if plot_type == '1D Mass Enclosed':
-      
+        
       plt.plot(dataframe_for_hist['r'].values,dataframe_for_hist['m_enclosed'].values)
-    
       plt.xlim(0,1)
-
+      
       plt.yscale('log')
+      plt.xscale('log')
 
       plt.title(str(name_of_HYDRO_simulation)+"t = "+str(time_to_plot))
       
