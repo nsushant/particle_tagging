@@ -28,6 +28,19 @@ from .utils import *
 
 def rank_order_particles_by_angmom(DMOparticles, hDMO):
     
+    '''
+    Inputs: 
+
+    DMOparticles - Particle data (angular momenta and positions) 
+    hDMO - Tangos halo object for the main halo
+    
+    
+    Returns: 
+    
+    a list of particle IDs ordered by their corresponding angular momenta.
+    
+    '''
+    
     print('this is how many DMOparticles were passed',len(DMOparticles))
     
     print('r200',hDMO['r200c'])
@@ -48,46 +61,61 @@ def rank_order_particles_by_angmom(DMOparticles, hDMO):
 
 
 
-def assign_stars_to_particles(snapshot_stellar_mass,particles_sorted_by_angmom,most_bound_fraction,selected_particles = [np.array([]),np.array([])]):
+def assign_stars_to_particles(snapshot_stellar_mass,particles_sorted_by_angmom,tagging_fraction,selected_particles = [np.array([]),np.array([])]):
     
     '''
+
+    Tags the lowest angular momenta dark matter particles of a halo with stellar mass. 
+
+    Inputs: 
+    
+    snapshot_stellar_mass - stellar mass to be tagged in given snapshot 
+    particles_sorted_by_angmom - list of particle dark matter IDs sorted by their angular momenta. 
+    tagging_fraction - defines the size of the free paramter used to perform tagging 
+    selected_particles - particle IDs of previously selected/tagged particles
+    
+    
+    Returns: 
+    
     selected_particles is a 2d array with rows = 2, cols = num of particles  
     
     selected_particles[0] = iords
     selected_particles[1] = stellar mass
+
+    updates_to_arrays = array updates that need to be written to an output file 
     
     '''
     
-    size_of_most_bound_fraction = int(particles_sorted_by_angmom.shape[0]*most_bound_fraction)
+    size_of_tagging_fraction = int(particles_sorted_by_angmom.shape[0]*tagging_fraction)
     
-    particles_in_most_bound_fraction = particles_sorted_by_angmom[:size_of_most_bound_fraction]
+    particles_in_tagging_fraction = particles_sorted_by_angmom[:size_of_tagging_fraction]
     
     #dividing stellar mass evenly over all the particles in the most bound fraction 
 
     print('assigning stellar mass')
     
-    stellar_mass_assigned = float(snapshot_stellar_mass/len(list(particles_in_most_bound_fraction))) if len(list(particles_in_most_bound_fraction))>0 else 0
+    stellar_mass_assigned = float(snapshot_stellar_mass/len(list(particles_in_tagging_fraction))) if len(list(particles_in_tagging_fraction))>0 else 0
     
     #check if particles have been selected before 
     
-    idxs_previously_selected = np.where(np.isin(selected_particles[0],particles_in_most_bound_fraction)==True)
+    idxs_previously_selected = np.where(np.isin(selected_particles[0],particles_in_tagging_fraction)==True)
     
-    selected_particles[1] = np.where(np.isin(selected_particles[0],particles_in_most_bound_fraction)==True,selected_particles[1]+stellar_mass_assigned,selected_particles[1]) 
+    selected_particles[1] = np.where(np.isin(selected_particles[0],particles_in_tagging_fraction)==True,selected_particles[1]+stellar_mass_assigned,selected_particles[1]) 
     
     #if not selected previously, add to array
     
-    idxs_not_previously_selected = np.where(np.isin(particles_in_most_bound_fraction,selected_particles[0])==False)
+    idxs_not_previously_selected = np.where(np.isin(particles_in_tagging_fraction,selected_particles[0])==False)
 
-    how_many_not_previously_selected = particles_in_most_bound_fraction[idxs_not_previously_selected].shape[0]
+    how_many_not_previously_selected = particles_in_tagging_fraction[idxs_not_previously_selected].shape[0]
     
-    selected_particles_new_iords = np.append(selected_particles[0],particles_in_most_bound_fraction[idxs_not_previously_selected])
+    selected_particles_new_iords = np.append(selected_particles[0],particles_in_tagging_fraction[idxs_not_previously_selected])
     
     selected_particles_new_masses = np.append(selected_particles[1],np.repeat(stellar_mass_assigned,how_many_not_previously_selected))
 
     
     selected_particles = np.array([selected_particles_new_iords,selected_particles_new_masses])
 
-    array_iords = np.append(selected_particles[0][idxs_previously_selected], particles_in_most_bound_fraction[idxs_not_previously_selected])
+    array_iords = np.append(selected_particles[0][idxs_previously_selected], particles_in_tagging_fraction[idxs_not_previously_selected])
 
     array_masses = np.append(selected_particles[1][idxs_previously_selected],np.repeat(stellar_mass_assigned,how_many_not_previously_selected))
 
@@ -97,16 +125,57 @@ def assign_stars_to_particles(snapshot_stellar_mass,particles_sorted_by_angmom,m
     
 
 
-def tag(DMOparticles, hDMO, snapshot_stellar_mass, free_param_value = 0.01, previously_tagged_particles = [np.array([]),np.array([])]):
+def tag(DMOparticles, hDMO, snapshot_stellar_mass,free_param_value = 0.01, previously_tagged_particles = [np.array([]),np.array([])]):
+
+    '''
     
+    Given the dark matter particles and the associated tangos halo object, the function performs particle tagging based on angular momentum 
+
+    Inputs:
+
+    DMOparticles - Particle data (angular momenta, positions, IDs) 
+    hDMO - Tangos halo object of main halo 
+    snapshot_stellar_mass - stellar mass to be tagged in current snapshot 
+    free_param_value - specifies the size of the 'tagging fraction' when tagging dm particles with stellar mass (bigger values correspond to a larger spread of angmom.)
+    previously_tagged_particles - particle IDs of any previously tagged particles 
+
+    Returns: 
+    
+    selected_particles is a 2d array with rows = 2, cols = num of particles  
+    
+    selected_particles[0] = iords
+    selected_particles[1] = stellar mass
+
+    updates_to_arrays = array updates that need to be written to an output file 
+    
+    
+    '''
     particles_ordered_by_angmom = rank_order_particles_by_angmom(DMOparticles, hDMO)
 
     return assign_stars_to_particles(snapshot_stellar_mass,particles_sorted_by_angmom, free_param_value, selected_particles = previously_tagged_particles)
     
 
 # under construction
-def angmom_tag_over_full_sim(DMOsim, fmb_percentage = 0.01, pynbody_path  = '/vol/ph/astro_data/shared/morkney/EDGE/', occupation_frac = 'all' ,particle_storage_filename=None, AHF_centers_file=None, mergers = True):
-  
+def angmom_tag_over_full_sim(DMOsim, free_param_value = 0.01, pynbody_path  = None, occupation_frac = 'all' ,particle_storage_filename=None, AHF_centers_file=None, mergers = True):
+
+    '''
+
+    Given a tangos simulation, the function performs angular momentum based tagging over the full simulation. 
+
+    Inputs: 
+
+    DMOsim - tangos simulation 
+    free_param_value - specifies the size of the 'tagging fraction' when tagging dm particles with stellar mass (bigger values correspond to a larger spread of angmom.)
+    pynbody_path - path to particle data 
+    occupation_frac - One of 'nadler20' , 'all' , 'edge1' or 'edgert' (controls the occupation regime followed by darklight)
+    mergers - Whether to include merging/accreting halos or not. 
+    
+    Returns: 
+    
+    dataframe with tagged particle masses at given times, redshifts and associated particle IDs  
+    
+    '''
+    
     pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
 
     # path to particle data 
@@ -215,7 +284,7 @@ def angmom_tag_over_full_sim(DMOsim, fmb_percentage = 0.01, pynbody_path  = '/vo
             # try to load in the data from this snapshot
             
             try:
-                simfn = join(pynbody_path,DMOname,outputs[i])
+                simfn = join(pynbody_path,outputs[i])
                 
                 print(simfn)
                 print('loading in DMO particles')
@@ -308,7 +377,7 @@ def angmom_tag_over_full_sim(DMOsim, fmb_percentage = 0.01, pynbody_path  = '/vo
             if particles_sorted_by_angmom.shape[0] == 0:
                 continue
             
-            selected_particles,array_to_write = assign_stars_to_particles(mass_select,particles_sorted_by_angmom,float(fmb_percentage),selected_particles = selected_particles)
+            selected_particles,array_to_write = assign_stars_to_particles(mass_select,particles_sorted_by_angmom,float(free_param_value),selected_particles = selected_particles)
             #halonums_indexing+=1
             
             
@@ -386,7 +455,7 @@ def angmom_tag_over_full_sim(DMOsim, fmb_percentage = 0.01, pynbody_path  = '/vo
                     leftover+=mstar_merging[-1]
                     continue
                 
-                simfn = join(pynbody_path,DMOname,outputs[i])
+                simfn = join(pynbody_path, outputs[i])
 
                 if float(mass_select_merge) >0 and decision2==True:
                     # try to load in the data from this snapshot
@@ -429,7 +498,7 @@ def angmom_tag_over_full_sim(DMOsim, fmb_percentage = 0.01, pynbody_path  = '/vo
         
                     print('assinging stars to accreted particles')
 
-                    selected_particles,array_to_write_accreted = assign_stars_to_particles(mass_select_merge,accreted_particles_sorted_by_angmom,float(fmb_percentage),selected_particles = selected_particles)
+                    selected_particles,array_to_write_accreted = assign_stars_to_particles(mass_select_merge,accreted_particles_sorted_by_angmom,float(free_param_value),selected_particles = selected_particles)
                     
                     
 
@@ -461,7 +530,226 @@ def angmom_tag_over_full_sim(DMOsim, fmb_percentage = 0.01, pynbody_path  = '/vo
     return df_tagged_particles
 
 
+def angmom_calculate_reffs_over_full_sim(DMOsim, data_particles_tagged, pynbody_path  = None , AHF_centers_file = None):
+
+    '''
+
+    Given a tangos simulation, the function performs angular momentum based tagging over the full simulation. 
+
+    Inputs: 
+
+    DMOsim - tangos simulation 
+    pynbody_path - path to particle data 
+    data_particles_tagged - dataframe containing tagged particle data (tagged mstar, particle IDs, tagging times)
     
+    Returns: 
+    
+    dataframe with half-mass radii calculated using tagged particles. 
+    
+    '''
+
+    
+    
+    pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
+                    
+    sims = [str(sim_name)]
+
+    DMOname = DMOsim.path
+    
+    t_all, red_all, main_halo,halonums,outputs = load_indexing_data(DMOsim,1)
+    print(outputs)
+    
+
+    #load in the two files containing the particle data
+    if ( len(red_all) != len(outputs) ) : 
+        print('output array length does not match redshift and time arrays')
+ 
+
+    data_t = np.asarray(data_particles_tagged['t'].values)
+    
+    stored_reff = np.array([])
+    stored_reff_acc = np.array([])
+    stored_reff_z = np.array([])
+    stored_time = np.array([])
+    kravtsov_r = np.array([])
+    stored_reff_tot = np.array([])
+    KE_energy = np.array([])
+    PE_energy = np.array([])
+
+    AHF_centers = pd.read_csv(str(AHF_centers_file)) if AHF_centers_supplied == True else None
+            
+    for i in range(len(outputs)):
+
+        gc.collect()
+
+        
+        if len(np.where(data_t <= float(t_all[i]))) == 0:
+            continue
+
+        
+        dt_all = data_particles_tagged[data_particles_tagged['t']<=t_all[i]]
+
+        data_grouped = dt_all.groupby(['iords']).last()
+
+        selected_iords_tot = data_grouped.index.values
+
+        data_insitu = data_grouped[data_grouped['type'] == 'insitu']
+        
+        selected_iords_insitu_only = data_insitu.index.values
+        
+        if selected_iords_tot.shape[0]==0:
+            continue
+        
+        mstars_at_current_time = data_grouped['mstar'].values
+        
+        half_mass = float(mstars_at_current_time.sum())/2
+        
+        print(half_mass)
+        
+        #get the main halo object at the given timestep if its not available then inform the user.
+
+       
+        hDMO = tangos.get_halo(DMOname+'/'+outputs[i]+'/halo_'+str(halonums[i]))
+            
+        print(hDMO)
+            
+        #for  the given path,entry,snapshot at given index generate a string that includes them
+        simfn = join(pynbody_path,outputs[i])
+        
+        # try to load in the data from this snapshot
+        try:  DMOparticles = pynbody.load(simfn)
+
+        # where this data isn't available, notify the user.
+        except:
+            print('--> DMO particle data exists but failed to read it, skipping!')
+            continue
+        
+        # once the data from the snapshot has been loaded, .physical_units()
+        # converts all array’s units to be consistent with the distance, velocity, mass basis units specified.
+        DMOparticles.physical_units()
+
+        
+
+        try:
+            if AHF_centers_file==None:
+                h = DMOparticles.halos()[int(halonums[i])-1]
+                
+            elif AHF_centers_file != None:
+                pynbody.config["halo-class-priority"] = [pynbody.halo.ahf.AHFCatalogue]
+                
+                
+                AHF_crossref = AHF_centers[AHF_centers['i'] == i]['AHF catalogue id'].values[0]
+                    
+                h = DMOparticles.halos()[int(AHF_crossref)] 
+                        
+                children_ahf = AHF_centers[AHF_centers['i'] == i]['children'].values[0]
+                        
+                child_str_l = children_ahf[0][1:-1].split()
+
+                children_ahf_int = list(map(float, child_str_l))
+
+                    
+                #pynbody.analysis.halo.center(h)
+                    
+                #pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
+                
+                
+                halo_catalogue = DMOparticles.halos()
+                
+                subhalo_iords = np.array([])
+                    
+                for i in children_ahf_int:
+                            
+                    subhalo_iords = np.append(subhalo_iords,halo_catalogue[int(i)].dm['iord'])
+                                                                                                                                             
+                h = h[np.logical_not(np.isin(h['iord'],subhalo_iords))] if len(subhalo_iords) >0 else h
+                
+
+                
+            pynbody.analysis.halo.center(h)
+            #pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
+
+        except:
+            print('centering data unavailable')
+            continue
+
+
+        try:
+            r200c_pyn = pynbody.analysis.halo.virial_radius(h.d, overden=200, r_max=None, rho_def='critical')
+
+        except:
+            print('could not calculate R200c')
+            continue
+        DMOparticles = DMOparticles[sqrt(DMOparticles['pos'][:,0]**2 + DMOparticles['pos'][:,1]**2 + DMOparticles['pos'][:,2]**2) <= r200c_pyn ]
+        
+        particle_selection_reff_tot = DMOparticles[np.isin(DMOparticles['iord'],selected_iords_tot)] if len(selected_iords_tot)>0 else []
+
+        particles_only_insitu = DMOparticles[np.isin(DMOparticles['iord'],selected_iords_insitu_only)] if len(selected_iords_insitu_only) > 0 else []
+
+        
+        if (len(particle_selection_reff_tot))==0:
+            print('skipped!')
+            continue
+        else:
+
+            dfnew = data_particles_tagged[data_particles_tagged['t']<=t_all[i]].groupby(['iords']).last()
+    
+            masses = [dfnew.loc[n]['mstar'] for n in particle_selection_reff_tot['iord']]
+
+            masses_insitu = [data_insitu.loc[iord]['mstar'] for iord in particles_only_insitu['iord']]
+                
+            cen_stars = calc_3D_cm(particles_only_insitu,masses_insitu)
+            
+            particle_selection_reff_tot['pos'] -= cen_stars
+            
+            masses = [dfnew.loc[n]['mstar'] for n in particle_selection_reff_tot['iord']]
+
+            #particle_selection_reff_tot['pos'] -= cen_stars 
+
+            distances =  np.sqrt(particle_selection_reff_tot['x']**2 + particle_selection_reff_tot['y']**2 + particle_selection_reff_tot['z']**2)
+
+            #caculate the center of mass using all the tagged particles
+            #cen_of_mass = center_on_tagged(distances,masses)
+            
+                        
+            idxs_distances_sorted = np.argsort(distances)
+
+            sorted_distances = np.sort(distances)
+
+            distance_ordered_iords = np.asarray(particle_selection_reff_tot['iord'][idxs_distances_sorted])
+            
+            print('array lengths',len(set(distance_ordered_iords)),len(distance_ordered_iords))
+
+            sorted_massess = [dfnew.loc[n]['mstar'] for n in distance_ordered_iords]
+            
+            cumilative_sum = np.cumsum(sorted_massess)
+
+            R_half = sorted_distances[np.where(cumilative_sum >= (cumilative_sum[-1]/2))[0][0]]
+            #print(cumilative_sum)
+            
+            halfmass_radius = []
+
+            stored_reff_z = np.append(stored_reff_z,red_all[i])
+            stored_time = np.append(stored_time, t_all[i])
+               
+            stored_reff = np.append(stored_reff,float(R_half))
+            kravtsov = hDMO['r200c']*0.02
+            kravtsov_r = np.append(kravtsov_r,kravtsov)
+
+            particle_selection_reff_tot['pos'] += cen_stars
+
+            print('halfmass radius:',R_half)
+            print('Kravtsov_radius:',kravtsov)
+            
+        
+  
+
+    print('---------------------------------------------------------------writing output file --------------------------------------------------------------------')
+
+    df_reff = pd.DataFrame({'reff':stored_reff,'z':stored_reff_z, 't':stored_time,'kravtsov':kravtsov_r})
+    
+    
+    return df_reff
 
     
     
