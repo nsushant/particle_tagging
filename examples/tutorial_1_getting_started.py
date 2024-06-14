@@ -29,8 +29,10 @@ tangos.core.init_db('/vol/ph/astro_data/shared/morkney/EDGE/tangos/Halo1459.db')
 ## loading in the simulation data  
 tangos_simulation = tangos.get_simulation('Halo1459_DMO')
 
-df_tagged_particles = ptag.tag_particles(tangos_simulation, method = 'angular momentum')
+#df_tagged_particles = ptag.tag_particles(tangos_simulation, tagging_method = 'angular momentum')
+df_tagged_particles = ptag.tag_particles(tangos_simulation, tagging_method = 'spatial')
 
+print(df_tagged_particles.head())
 # change df_tagged_particles = ptag.tag_over_full_sim(tangos_simulation, method = 'angular momentum')
 
 # ptag.analysis.plotting, ptag.analysis.calculate 
