@@ -23,7 +23,7 @@ def edge_plot_tagged_vs_hydro_mass_dist(name_of_DMO_simulation, name_of_HYDRO_si
     
     # finding mass distribution of tagged particles in DMO simulation 
 
-    DMOsim, main_halo, halonums, outputs = load_tangos_data(name_of_DMO_simulation,0)
+    DMOsim, main_halo, halonums, outputs = load_indexing_data(name_of_DMO_simulation,1)
 
     times_tangos = main_halo.calculate_for_progenitors('t()')[0][::-1]
     
@@ -67,7 +67,7 @@ def edge_plot_tagged_vs_hydro_mass_dist(name_of_DMO_simulation, name_of_HYDRO_si
     
     # plotting hydro particles 
 
-    sim, HYDRO_main_halo, HYDRO_halonums, outputs_HYDRO = load_tangos_data(name_of_HYDRO_simulation,0)
+    sim, HYDRO_main_halo, HYDRO_halonums, outputs_HYDRO = load_indexing_data(name_of_HYDRO_simulation,1)
     
     times_tangos_HYDRO = HYDRO_main_halo.calculate_for_progenitors('t()')[0][::-1]
 
