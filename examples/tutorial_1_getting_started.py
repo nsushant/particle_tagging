@@ -30,8 +30,6 @@ df_half_mass_tagged = ptag.calculate_rhalf(DMO_database, df_tagged_particles, py
 # HYDRO simulation database 
 HYDRO_database = tangos.get_simulation('Halo1459_fiducial')
 
-print(df_tagged_particles.head())
-
 halflight_hydro,time_array_hydro = HYDRO_database.timesteps[-1].halos[0].calculate_for_progenitors('stellar_projected_halflight', 't()')
 
 plt.plot(df_half_mass_tagged['t'],df_half_mass_tagged['reff'],label='Half-mass (tagged)')
