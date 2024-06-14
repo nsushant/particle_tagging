@@ -9,7 +9,7 @@ import os
 import matplotlib.style
 import matplotlib as mpl
 import seaborn as sns
-from particle_tagging_package.tagging.utils import *
+from particle_tagging.tagging.utils import *
 
 mpl.rcParams.update({'text.usetex': False})
 
