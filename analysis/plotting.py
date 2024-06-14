@@ -22,10 +22,15 @@ def edge_plot_tagged_vs_hydro_mass_dist(name_of_DMO_simulation, name_of_HYDRO_si
     pynbody_path    = '/vol/ph/astro_data/shared/morkney/EDGE/'
     
     # finding mass distribution of tagged particles in DMO simulation 
-    
-    tangos.core.init_db(tangos_path+'Halo1459.db') 
 
-    DMOsim = tangos.get_simulation('Halo1459_DMO')
+    split = name_of_DMO_simulation.split('_')
+
+    halo_shortname = split[0]
+
+    tangos.core.init_db(tangos_path+halo_shortname+'.db') 
+
+    DMOsim = tangos.get_simulation(name_of_DMO_simulation)
+    
     t_all,red_all,main_halo, halonums, outputs = load_indexing_data(DMOsim,1)
 
     times_tangos = main_halo.calculate_for_progenitors('t()')[0][::-1]
@@ -112,7 +117,7 @@ def edge_plot_tagged_vs_hydro_mass_dist(name_of_DMO_simulation, name_of_HYDRO_si
       
       plt.plot(dataframe_for_hist['r'].values,dataframe_for_hist['m_enclosed'].values, label=label)
     
-      plt.xlim(0,1)
+      #plt.xlim(0,1)
 
       plt.yscale('log')
 
@@ -125,7 +130,7 @@ def edge_plot_tagged_vs_hydro_mass_dist(name_of_DMO_simulation, name_of_HYDRO_si
       
       plt.plot(dataframe_for_hist['r'].values,dataframe_for_hist['m_enclosed'].values)
     
-      plt.xlim(0,1)
+      #plt.xlim(0,1)
 
       plt.yscale('log')
 
