@@ -118,9 +118,11 @@ def edge_plot_tagged_vs_hydro_mass_dist(name_of_DMO_simulation, name_of_HYDRO_si
       plt.plot(dataframe_for_hist['r'].values,dataframe_for_hist['m_enclosed'].values, label=label)
     
       #plt.xlim(0,1)
-
-      plt.yscale('log')
-      plt.xscale('log')
+      #plt.xlim(0.1,None)
+      plt.ylim(300,None)
+      
+      #plt.yscale('log')
+      #plt.xscale('log')
 
       plt.title(str(name_of_HYDRO_simulation))
       
@@ -129,7 +131,7 @@ def edge_plot_tagged_vs_hydro_mass_dist(name_of_DMO_simulation, name_of_HYDRO_si
 
     if plot_type == '1D Mass Distribution':
       
-      plt.plot(dataframe_for_hist['r'].values,dataframe_for_hist['m_enclosed'].values)
+      plt.hist(dataframe_for_hist['r'].values,weights=dataframe_for_hist['masses'].values,bins=15)
     
       #plt.xlim(0,1)
 

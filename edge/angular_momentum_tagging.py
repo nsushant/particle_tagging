@@ -23,6 +23,8 @@ import sys
 import pandas as pd
 from particle_tagging.tagging.angular_momentum_tagging import *
 from particle_tagging.edge.utils import *
+from particle_tagging.analysis.calculate import * 
+
 
 def get_child_iords(halo,halo_catalog,DMOstate='fiducial'):
 
@@ -640,6 +642,7 @@ def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_fi
         stored_reff_tot = np.array([])
         KE_energy = np.array([])
         PE_energy = np.array([])
+        lum_based_halflight = np.array([])
 
         AHF_centers = pd.read_csv(str(AHF_centers_file)) if AHF_centers_supplied == True else None
                 
@@ -842,20 +845,39 @@ def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_fi
                 print('array lengths',len(set(distance_ordered_iords)),len(distance_ordered_iords))
 
                 sorted_massess = [dfnew.loc[n]['mstar'] for n in distance_ordered_iords]
+
                 
                 cumilative_sum = np.cumsum(sorted_massess)
 
                 R_half = sorted_distances[np.where(cumilative_sum >= (cumilative_sum[-1]/2))[0][0]]
                 #print(cumilative_sum)
+
+            
+                st_ages = calc_ages(data_particles[data_particles['t']<=t_all[i]],t_all[i])
+
+                lums = calc_luminosity(st_ages)
+
+                lums_df = pd.DataFrame({'luminosity':lums , 'iords':dfnew.index.values }).groupby(['iords']).last() 
+
+                dist_ordered_lums = np.asarray([lums_df.loc[x]['luminosity'] for x in distance_ordered_iords])
                 
-                halfmass_radius = []
+                csum_lum = np.cumsum(dist_ordered_lums)
+
+                #print(half_lum,  csum_lum[-1], '<----mstars')
+                
+                hlight_r = sorted_distances[np.where( csum_lum >= (csum_lum[-1]/2) )[0][0]]
+
+                print(hlight_r)
+                
+                #halfmass_radius = []
 
                 '''
                 for d in range(len(sorted_distances)):
                     if cumilative_sum[d] >= half_mass:
                         halfmass_radius.append(sorted_distances[d])
                 '''     
-
+                lum_based_halflight = np.append(lum_based_halflight,hlight_r)
+                
                 stored_reff_z = np.append(stored_reff_z,red_all[i])
                 stored_time = np.append(stored_time, t_all[i])
                    
@@ -873,7 +895,7 @@ def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_fi
 
         print('---------------------------------------------------------------writing output file --------------------------------------------------------------------')
 
-        df_reff = pd.DataFrame({'reff':stored_reff,'z':stored_reff_z, 't':stored_time,'kravtsov':kravtsov_r})
+        df_reff = pd.DataFrame({'halflight':lum_based_halflight, 'reff':stored_reff, 'z':stored_reff_z, 't':stored_time,'kravtsov':kravtsov_r})
         
         #df2_reff = pd.DataFrame({'z_tangos':ztngs, 't_tangos':ttngs,'reff_tangos':hlftngs})
         
