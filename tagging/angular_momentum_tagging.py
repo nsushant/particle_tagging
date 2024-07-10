@@ -831,6 +831,7 @@ def angmom_tag_over_full_sim_recursive(DMOsim, halonumber, free_param_value = 0.
                     selected_particles_new_mstar  = np.append(selected_particles[1] , particles_not_previously_tagged['mstar'])
 
                     selected_particles = np.array([selected_particles_new_iords,selected_particles_new_mstar])
+                    accreted_only_particle_ids = np.append(accreted_only_particle_ids,df_tagged_acc['iords'].values)
 
                     
                     
