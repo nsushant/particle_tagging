@@ -420,7 +420,7 @@ def angmom_tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_st
                                 continue
 
                         angmom_tag_particles(hDM.path,occupation_fraction,fmb_percentage,particle_storage_filename)
-                        '''
+              
                         try:
                             t_2,redshift_2,vsmooth_2,sfh_in2,mstar_in2,mstar_merging = DarkLight(hDM,DMO=True,poccupied=occupation_fraction,mergers=True)
                             print(len(t_2))
@@ -502,8 +502,7 @@ def angmom_tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_st
                             #pynbody.analysis.halo.center(h_merge,mode='hyb').revert()
                   
                             del DMOparticles_acc_only
-                
-                        '''    
+                   
                                     
                 if decision==True or decl==True:
                     del DMOparticles
