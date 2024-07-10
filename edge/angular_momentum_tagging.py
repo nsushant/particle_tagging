@@ -418,7 +418,9 @@ def angmom_tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_st
                             if (np.random.random() > prob_occupied):
                                 print('Skipped')
                                 continue
-                        
+
+                        angmom_tag_particles(hDM.path,occupation_fraction,fmb_percentage,particle_storage_filename)
+                        '''
                         try:
                             t_2,redshift_2,vsmooth_2,sfh_in2,mstar_in2,mstar_merging = DarkLight(hDM,DMO=True,poccupied=occupation_fraction,mergers=True)
                             print(len(t_2))
@@ -501,7 +503,7 @@ def angmom_tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_st
                   
                             del DMOparticles_acc_only
                 
-                            
+                        '''    
                                     
                 if decision==True or decl==True:
                     del DMOparticles
@@ -855,8 +857,13 @@ def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_fi
             
                 st_ages = calc_ages(data_particles[data_particles['t']<=t_all[i]],t_all[i])
 
-                lums = calc_luminosity(st_ages)
+                ages_df = pd.DataFrame({'ages':st_ages , 'iords':dfnew.index.values }).groupby(['iords']).last()
 
+                ordered_ages = np.asarray([ ages_df.loc[x]['ages'] for x in particle_selection_reff_tot['iord'] ])
+
+                lums = calc_luminosity(ordered_ages)
+
+                '''
                 lums_df = pd.DataFrame({'luminosity':lums , 'iords':dfnew.index.values }).groupby(['iords']).last() 
 
                 dist_ordered_lums = np.asarray([lums_df.loc[x]['luminosity'] for x in distance_ordered_iords])
@@ -864,8 +871,11 @@ def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_fi
                 csum_lum = np.cumsum(dist_ordered_lums)
 
                 #print(half_lum,  csum_lum[-1], '<----mstars')
+                '''
                 
-                hlight_r = sorted_distances[np.where( csum_lum >= (csum_lum[-1]/2) )[0][0]]
+                hlight_r = calc_halflight(particle_selection_reff_tot, ordered_ages, band='v', cylindrical=False)
+
+                #sorted_distances[np.where( csum_lum >= (csum_lum[-1]/2) )[0][0]]
 
                 print(hlight_r)
                 

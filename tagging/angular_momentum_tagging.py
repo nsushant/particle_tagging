@@ -223,6 +223,7 @@ def angmom_tag_over_full_sim(DMOsim, free_param_value = 0.01, pynbody_path  = No
     tagged_mstars_to_write = np.array([])
     ts_to_write = np.array([])
     zs_to_write = np.array([])
+    acc_halo_path_tagged = np.array([])
     
     # looping over all snapshots  
     for i in range(len(outputs)):
@@ -417,7 +418,7 @@ def angmom_tag_over_full_sim(DMOsim, free_param_value = 0.01, pynbody_path  = No
             for hDM in hmerge_added[t_id][0]:
                 gc.collect()
                 print('halo:',hDM)
-            
+                acc_halo_path_tagged,append(hDM.calculate_for_progenitors('path()')
                 if (occupation_frac != 'all'):
                     try:
                         prob_occupied = calculate_poccupied(hDM,occupation_frac)
@@ -430,6 +431,8 @@ def angmom_tag_over_full_sim(DMOsim, free_param_value = 0.01, pynbody_path  = No
                     if (np.random.random() > prob_occupied):
                         print('Skipped')
                         continue
+                #angmom_tag_over_full_sim(hDM, free_param_value = 0.01, pynbody_path  = pynbody_path, occupation_frac = 'all', mergers = True)
+
                 
                 try:
                     t_2,redshift_2,vsmooth_2,sfh_in2,mstar_in2,mstar_merging = DarkLight(hDM,DMO=True,poccupied=occupation_frac,mergers=True)
@@ -514,7 +517,7 @@ def angmom_tag_over_full_sim(DMOsim, free_param_value = 0.01, pynbody_path  = No
           
                     del DMOparticles_acc_only
         
-                    
+                  
                             
         if decision==True or decl==True:
             del DMOparticles

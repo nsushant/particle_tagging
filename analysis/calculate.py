@@ -1,5 +1,6 @@
 import numpy as np
 import pynbody
+import pynbody.filt as f
 
 def projected_halfmass_radius(particles, tagged_masses):
     '''
@@ -79,3 +80,64 @@ def calc_ages(tagged_particle_df, t_current):
     age = t_current-tform
 
     return age 
+
+
+
+def calc_tot_lum(particle_ages):
+    
+
+    lums = calc_luminosity(particle_ages)
+
+    halo_luminosity = np.sum(lums)
+    
+    return halo_luminosity 
+
+
+def calc_halflight(sim,ages_st,band='v',cylindrical=False):
+
+    '''
+    Assumes ordering of ages_st is the same as sim_particles
+    '''
+    
+    half_l = calc_tot_lum(ages_st) * 0.5
+
+    if cylindrical:
+        coord = 'rxy'
+    else:
+        coord = 'r'
+
+    max_high_r = np.max(sim.dm[coord])
+    test_r = 0.5 * max_high_r
+    
+    testrf = f.LowPass(coord, test_r)
+    min_low_r = 0.0
+
+    chosen_particle_ages = ages_st[np.isin(sim.dm['iord'],sim.dm[testrf]['iord'])]
+    
+    test_l = calc_tot_lum(chosen_particle_ages)
+
+    it = 0
+
+    while ((np.abs(test_l - half_l) / half_l) > 0.01):
+        it = it + 1
+        if (it > 20):
+            break
+
+        if (test_l > half_l):
+            test_r = 0.5 * (min_low_r + test_r)
+        else:
+            test_r = (test_r + max_high_r) * 0.5
+
+        testrf = f.LowPass(coord, test_r)
+        chosen_particle_ages = ages_st[np.isin(sim.dm['iord'],sim.dm[testrf]['iord'])]
+        test_l = calc_tot_lum(chosen_particle_ages)
+            
+        if (test_l > half_l):
+            max_high_r = test_r
+        else:
+            min_low_r = test_r
+    
+    return test_r
+
+
+                                                                                                                                                        
