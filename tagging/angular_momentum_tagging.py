@@ -418,7 +418,13 @@ def angmom_tag_over_full_sim(DMOsim, free_param_value = 0.01, pynbody_path  = No
             for hDM in hmerge_added[t_id][0]:
                 gc.collect()
                 print('halo:',hDM)
-                acc_halo_path_tagged,append(hDM.calculate_for_progenitors('path()')
+
+                acc_halo_path = hDM.calculate_for_progenitors('path()')
+
+                if ( np.isin(acc_halo_path,acc_halo_path_tagged) == False ):
+
+                    np.append(acc_halo_path_tagged,acc_halo_path) 
+                
                 if (occupation_frac != 'all'):
                     try:
                         prob_occupied = calculate_poccupied(hDM,occupation_frac)
