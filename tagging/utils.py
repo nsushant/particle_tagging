@@ -49,8 +49,9 @@ def calculate_poccupied(halo_object,occupation_regime):
 
     # units = kpc s^-1 
     vmax = max(np.sqrt( G_constant * (halo_object['dm_mass_profile']/halo_object['rbins_profile']) ))
-    
-    p_occupied = darklight.core.occupation_fraction(vmax,method=occupation_regime)
+
+    m200 = halo_object['M200c']
+    p_occupied = darklight.core.occupation_fraction(vmax,m200,method=occupation_regime)
 
     return p_occupied
 

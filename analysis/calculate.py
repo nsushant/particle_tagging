@@ -32,7 +32,7 @@ def projected_halfmass_radius(particles, tagged_masses):
 
 
 
-def calc_luminosity(particle_ages):
+def calc_luminosity(particle_ages,masses):
 
 
     # Assumes ages are supplied in units of gyr 
@@ -64,9 +64,11 @@ def calc_luminosity(particle_ages):
 
     # calculating luminosities
 
+    vals = output_mags - 2.5 * np.log10(masses)
+    
     v_mag_sun = 4.8
 
-    lum_msol = 10.0 ** ((v_mag_sun - output_mags)*0.4)
+    lum_msol = 10.0 ** ((v_mag_sun - vals)*0.4)
 
     #print('luminosity (Msol): ',list(lum_msol))
     
@@ -83,23 +85,60 @@ def calc_ages(tagged_particle_df, t_current):
 
 
 
-def calc_tot_lum(particle_ages):
+
+def produce_lums_grouped(df,present_iords,t_snap):
+
+    #tagging_info_for_each_particle = df.groupby(['iords'])
+
+    ages = t_snap - df['t'].values 
+    masses_st =df['mstar'].values
+
+    lum_vals = calc_luminosity(ages,masses_st)
+
+    df['lums'] = lum_vals
+
+    lums_df = df.groupby(['iords']).sum()['lums']
+
+    lums_for_part = np.asarray([lums_df.loc[iord] for iord in present_iords])
+    '''
+    for particle_id_tag in present_iords:
+
+        group = tagging_info_for_each_particle.get_group(particle_id_tag)
+
+        group.sort_values(by="t",ascending=True,inplace=True)
+        
+        masses_particle = group['mstar'] - group['mstar'].shift(1)
+
+        masses_particle.iloc[0] = group['mstar'].iloc[0] 
+
+        #mass_form = np.append(mass_form,masses_particle)
+        tgrp = t_snap - group['t'].values
+        #ages_from_tag = np.append(ages_from_tag,tgrp)
+        lum_grp = np.sum(np.asarray(calc_luminosity(tgrp,masses_particle)))
+        lums_for_part = np.append(lums_for_part,lum_grp)
+    '''
+
+    
+    return lums_for_part 
+
+
+def calc_tot_lum(particle_ages,masses):
     
 
-    lums = calc_luminosity(particle_ages)
+    lums = calc_luminosity(particle_ages,masses)
 
     halo_luminosity = np.sum(lums)
     
     return halo_luminosity 
 
 
-def calc_halflight(sim,ages_st,band='v',cylindrical=False):
+def calc_halflight(sim,lum_for_each_iord,band='v',cylindrical=False):
 
     '''
     Assumes ordering of ages_st is the same as sim_particles
     '''
     
-    half_l = calc_tot_lum(ages_st) * 0.5
+    half_l = np.sum(lum_for_each_iord) * 0.5
 
     if cylindrical:
         coord = 'rxy'
@@ -112,10 +151,11 @@ def calc_halflight(sim,ages_st,band='v',cylindrical=False):
     testrf = f.LowPass(coord, test_r)
     min_low_r = 0.0
 
-    chosen_particle_ages = ages_st[np.isin(sim.dm['iord'],sim.dm[testrf]['iord'])]
+    #chosen_particle_ages = ages_st[np.isin(sim.dm['iord'],sim.dm[testrf]['iord'])]
+    #chosen_particle_masses = masses[np.isin(sim.dm['iord'],sim.dm[testrf]['iord'])]
     
-    test_l = calc_tot_lum(chosen_particle_ages)
-
+    test_l = np.sum(lum_for_each_iord[np.isin(sim.dm['iord'],sim.dm[testrf]['iord'])])
+    
     it = 0
 
     while ((np.abs(test_l - half_l) / half_l) > 0.01):
@@ -129,8 +169,9 @@ def calc_halflight(sim,ages_st,band='v',cylindrical=False):
             test_r = (test_r + max_high_r) * 0.5
 
         testrf = f.LowPass(coord, test_r)
-        chosen_particle_ages = ages_st[np.isin(sim.dm['iord'],sim.dm[testrf]['iord'])]
-        test_l = calc_tot_lum(chosen_particle_ages)
+        #chosen_particle_ages = ages_st[np.isin(sim.dm['iord'],sim.dm[testrf]['iord'])]
+        #chosen_particle_masses = masses[np.isin(sim.dm['iord'],sim.dm[testrf]['iord'])]
+        test_l = np.sum(lum_for_each_iord[np.isin(sim.dm['iord'],sim.dm[testrf]['iord'])])
             
         if (test_l > half_l):
             max_high_r = test_r

@@ -21,7 +21,7 @@ from tangos.examples.mergers import *
 import random
 import sys
 import pandas as pd
-from particle_tagging.tagging.angular_momentum_tagging import *
+import particle_tagging.tagging.angular_momentum_tagging as ptag
 from particle_tagging.edge.utils import *
 from particle_tagging.analysis.calculate import * 
 
@@ -83,15 +83,18 @@ def get_child_iords(halo,halo_catalog,DMOstate='fiducial'):
 
 pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
 
-def angmom_tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_storage_filename,AHF_centers_file=None,mergers = True,AHF_centers_supplied=False):
+def angmom_tag_particles_edge(sim_name,occupation_fraction,fmb_percentage,particle_storage_filename,AHF_centers_file=None,mergers = True,AHF_centers_supplied=False,machine='astro'):
 
-    
-    #used paths
-    tangos_path_edge     = '/vol/ph/astro_data/shared/morkney/EDGE/tangos/'
-    tangos_path_chimera  = '/vol/ph/astro_data/shared/etaylor/CHIMERA/'
-    pynbody_path_edge    = '/vol/ph/astro_data/shared/morkney/EDGE/'
-    pynbody_path_chimera = '/vol/ph/astro_data/shared/etaylor/CHIMERA/'
-    pynbody_edge_gm =  '/vol/ph/astro_data2/shared/morkney/EDGE_GM/'
+
+    if machine == 'astro':
+        #used paths
+        tangos_path_edge     = '/vol/ph/astro_data/shared/morkney/EDGE/tangos/'
+        tangos_path_chimera  = '/vol/ph/astro_data/shared/etaylor/CHIMERA/'
+        pynbody_path_edge    = '/vol/ph/astro_data/shared/morkney/EDGE/'
+        pynbody_path_chimera = '/vol/ph/astro_data/shared/etaylor/CHIMERA/'
+        pynbody_edge_gm =  '/vol/ph/astro_data2/shared/morkney/EDGE_GM/'
+
+    #if machine == 'dirac':
 
     '''
     
@@ -168,12 +171,12 @@ def angmom_tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_st
         # load_tangos_data is a part of the 'utils.py' file in the tagging dir, it loads in the tangos database 'DMOsim' and returns the main halos tangos object, outputs and halonums at all timesteps
         # here haloidx_at_end or 0 here specifies the index associated with the main halo at the last snapshot in the tangos db's halo catalogue
         
-        DMOsim,main_halo,halonums,outputs = load_indexing_data(DMOname,1)
+        DMOsim,main_halo,halonums,outputs = load_indexing_data(DMOname,1,machine=machine)
         
         print('HALONUMS:---',len(halonums), "OUTPUTS---",len(outputs))
         
         # Get stellar masses at each redshift using darklight for insitu tagging (mergers = False excludes accreted mass)
-        t,redshift,vsmooth,sfh_insitu,mstar_s_insitu,mstar_total = DarkLight(main_halo,DMO=True,mergers = False, poccupied=occupation_fraction)
+        t,redshift,vsmooth,sfh_insitu,mstar_s_insitu,mstar_total = DarkLight(main_halo,DMO=True,mergers = False,occupation='edge1', pre_method='fiducial_with_turnover', post_scatter_method='flat')
 
         #calculate when the mergers took place and grab all the tangos halo objects involved in the merger (zmerge = merger redshift, hmerge = merging halo objects,qmerge = merger ratio)
         zmerge, qmerge, hmerge = get_mergers_of_major_progenitor(main_halo)
@@ -187,7 +190,11 @@ def angmom_tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_st
         if ( len(red_all) != len(outputs) ) : 
 
             print('output array length does not match redshift and time arrays')
-        
+
+
+        df_tagged_particles = ptag.angmom_tag_over_full_sim_recursive(DMOsim,-1, 1, free_param_value = 0.01, pynbody_path  = pynbody_path, occupation_frac = 'edge1',mergers = True)
+
+        '''
         # group_mergers groups all merging objects by redshift.
         # this array gets stored in hmerge_added in the form => len = no. of unique zmerges, 
         # elements = all the hmerges of halos merging at each zmerge
@@ -509,8 +516,8 @@ def angmom_tag_particles(sim_name,occupation_fraction,fmb_percentage,particle_st
             
             
                 print("Done with iteration",i)
-                
-    return pd.read_csv(particle_storage_filename)
+        '''        
+    return df_tagged_particles
 
 
 def calc_3D_cm(particles,masses):
@@ -658,14 +665,14 @@ def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_fi
             
             dt_all = data_particles[data_particles['t']<=t_all[i]]
 
-
-            data_grouped = dt_all.groupby(['iords']).last()
+            
+            data_grouped = dt_all.groupby(['iords']).sum()
             
             #selected_iords_tot = np.unique(data_particles['iords'][data_particles['t']<=t_all[i]].values)
 
             selected_iords_tot = data_grouped.index.values
 
-            data_insitu = data_grouped[data_grouped['type'] == 'insitu']
+            data_insitu = dt_all[dt_all['type'] == 'insitu'].groupby(['iords']).sum()
             
             selected_iords_insitu_only = data_insitu.index.values
             
@@ -673,8 +680,8 @@ def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_fi
             #selected_iords_insitu = np.unique(data_particles['iords'][data_particles['type']=='insitu'][data_particles['t']<=t_all[i]].values)
             
             #selected_iords_acc = np.unique(data_particles['iords'][data_particles['type']=='accreted'][data_particles['t']<=t_all[i]].values)
-
-
+           
+            
             if selected_iords_tot.shape[0]==0:
                 continue
             
@@ -760,6 +767,7 @@ def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_fi
             except:
                 print('could not calculate R200c')
                 continue
+            
             DMOparticles = DMOparticles[sqrt(DMOparticles['pos'][:,0]**2 + DMOparticles['pos'][:,1]**2 + DMOparticles['pos'][:,2]**2) <= r200c_pyn ]
 
             #pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
@@ -775,7 +783,6 @@ def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_fi
                 continue
             '''
 
-            
             particle_selection_reff_tot = DMOparticles[np.isin(DMOparticles['iord'],selected_iords_tot)] if len(selected_iords_tot)>0 else []
 
             particles_only_insitu = DMOparticles[np.isin(DMOparticles['iord'],selected_iords_insitu_only)] if len(selected_iords_insitu_only) > 0 else []
@@ -787,10 +794,13 @@ def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_fi
                 continue
             else:
 
-                dfnew = data_particles[data_particles['t']<=t_all[i]].groupby(['iords']).last()
+                #dfnew = data_particles[data_particles['t']<=t_all[i]].groupby(['iords']).sum()
 
+
+                #lum_for_each_part = produce_lums_grouped( dt_all, particles_only_insitu['iord'], t_all[i])  
+                
         
-                masses = [dfnew.loc[n]['mstar'] for n in particle_selection_reff_tot['iord']]
+                masses = [ data_grouped.loc[n]['mstar'] for n in particle_selection_reff_tot['iord']]
 
                 masses_insitu = [data_insitu.loc[iord]['mstar'] for iord in particles_only_insitu['iord']]
                     
@@ -801,8 +811,9 @@ def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_fi
                 #particle_selection_reff_tot['pos'] -= cen_stars
 
                 # new cutoff calc begins 
-                distances = np.sqrt(particle_selection_reff_tot['x']**2+particle_selection_reff_tot['y']**2 + particle_selection_reff_tot['z']**2)
+                distances = np.sqrt(particle_selection_reff_tot['x']**2+particle_selection_reff_tot['y']**2) #+ particle_selection_reff_tot['z']**2)
 
+                '''
                 b = np.linspace(0,r200c_pyn,num=50)
 
                 bins_digi = np.digitize(distances,bins=b)-1
@@ -811,7 +822,7 @@ def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_fi
 
                 print('masses min',min(data_sum['masses']))
                 print('masses max:', max(data_sum['masses'].values))
-
+                '''
                 #print('cutoffs:',b[data_sum.index.values[np.where(data_sum['masses'].values < max(data_sum['masses'].values)/100)]])
                 '''
                 if min(data_sum['masses'].values) > (max(data_sum['masses'].values)/100):
@@ -825,13 +836,13 @@ def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_fi
                     previous_halflight = stored_reff[-1]
                     particle_selection_reff_tot = particle_selection_reff_tot[np.sqrt(particle_selection_reff_tot['pos'][:,0]**2+particle_selection_reff_tot['pos'][:,1]**2+particle_selection_reff_tot['pos'][:,2]**2) <= (m_cutoff)]
                 ''' 
-                masses = [dfnew.loc[n]['mstar'] for n in particle_selection_reff_tot['iord']]
+                #masses = np.asarray([dfnew.loc[n]['mstar'] for n in particle_selection_reff_tot['iord']])
 
                 #cen_stars = calc_3D_cm(particle_selection_reff_tot,masses)
 
                 #particle_selection_reff_tot['pos'] -= cen_stars 
 
-                distances =  np.sqrt(particle_selection_reff_tot['x']**2 + particle_selection_reff_tot['y']**2 + particle_selection_reff_tot['z']**2)
+                #distances =  np.sqrt(particle_selection_reff_tot['x']**2 + particle_selection_reff_tot['y']**2 + particle_selection_reff_tot['z']**2)
 
                 #caculate the center of mass using all the tagged particles
                 #cen_of_mass = center_on_tagged(distances,masses)
@@ -845,22 +856,24 @@ def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_fi
                 
                 print('array lengths',len(set(distance_ordered_iords)),len(distance_ordered_iords))
 
-                sorted_massess = [dfnew.loc[n]['mstar'] for n in distance_ordered_iords]
+                sorted_massess = [data_grouped.loc[n]['mstar'] for n in distance_ordered_iords]
 
-                
                 cumilative_sum = np.cumsum(sorted_massess)
 
                 R_half = sorted_distances[np.where(cumilative_sum >= (cumilative_sum[-1]/2))[0][0]]
                 #print(cumilative_sum)
 
             
-                st_ages = calc_ages(data_particles[data_particles['t']<=t_all[i]],t_all[i])
+                #st_ages = calc_ages(data_particles[data_particles['t']<=t_all[i]],t_all[i])
 
-                ages_df = pd.DataFrame({'ages':st_ages , 'iords':dfnew.index.values }).groupby(['iords']).last()
+                #st_ages = calc_ages(dt_all,t_all[i])
+                #grouped_first = dt_all.groupby(['iords']).first()
+                
+                #ages_df = pd.DataFrame({'ages':st_ages , 'iords': grouped_first.index.values }).groupby(['iords']).last()
 
-                ordered_ages = np.asarray([ ages_df.loc[x]['ages'] for x in particle_selection_reff_tot['iord'] ])
-
-                lums = calc_luminosity(ordered_ages)
+                #ordered_ages = np.asarray([ ages_df.loc[x]['ages'] for x in particle_selection_reff_tot['iord'] ])
+                
+                #lums = calc_luminosity(ages_from_formation,mass_form)
 
                 '''
                 lums_df = pd.DataFrame({'luminosity':lums , 'iords':dfnew.index.values }).groupby(['iords']).last() 
@@ -871,8 +884,9 @@ def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_fi
 
                 #print(half_lum,  csum_lum[-1], '<----mstars')
                 '''
-                
-                hlight_r = calc_halflight(particle_selection_reff_tot, ordered_ages, band='v', cylindrical=False)
+
+                lum_for_each_part = produce_lums_grouped( dt_all, particle_selection_reff_tot['iord'], t_all[i])
+                hlight_r = calc_halflight(particle_selection_reff_tot, lum_for_each_part, band='v', cylindrical=False)
 
                 #sorted_distances[np.where( csum_lum >= (csum_lum[-1]/2) )[0][0]]
 

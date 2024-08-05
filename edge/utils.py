@@ -21,9 +21,9 @@ def get_dist(pos):
                     
 
 
-def load_indexing_data(DMOname,halo_number):
+def load_indexing_data(DMOname,halo_number,machine='astro'):
     
-    DMOsim = darklight.edge.load_tangos_data(DMOname,machine='astro')
+    DMOsim = darklight.edge.load_tangos_data(DMOname,machine=machine)
     main_halo = DMOsim.timesteps[-1].halos[int(halo_number) - 1]
     halonums = main_halo.calculate_for_progenitors('halo_number()')[0][::-1]
     times_valid = main_halo.calculate_for_progenitors('t()')[0][::-1]
@@ -37,8 +37,20 @@ def load_indexing_data(DMOname,halo_number):
     #snapshots = [ f for f in listdir(pynbody_path+DMOname) if (isdir(join(pynbody_path,DMOname,f)) and f[:6]=='output') ]
     return DMOsim, main_halo, halonums, valid_outputs
 
+def calculate_poccupied(halo_object,occupation_regime):
+    # units = kpc^3 M_sun^-1 s^-2
+    G_constant = 4.3009*(10**(-6))
 
+    # units = kpc s^-1
+    vmax = max(np.sqrt( G_constant * (halo_object['dm_mass_profile']/halo_object['rbins_profile']) ))
+    
+    m200 = halo_object['M200c']
+    p_occupied = darklight.core.occupation_fraction(vmax,m200,method=occupation_regime)
 
+    return p_occupied
+
+                        
+'''
 
 def calculate_poccupied(halo_object,occupation_regime):
 
@@ -51,6 +63,8 @@ def calculate_poccupied(halo_object,occupation_regime):
     p_occupied = darklight.core.occupation_fraction(vmax,method=occupation_regime)
 
     return p_occupied
+
+'''
 
     
 def group_mergers(z_merges,h_merges):

@@ -10,6 +10,7 @@ import matplotlib.style
 import matplotlib as mpl
 import seaborn as sns
 from particle_tagging.tagging.utils import *
+from particle_tagging.analysis.calculate import *
 
 mpl.rcParams.update({'text.usetex': False})
 
@@ -34,6 +35,8 @@ def edge_plot_tagged_vs_hydro_mass_dist(name_of_DMO_simulation, name_of_HYDRO_si
     t_all,red_all,main_halo, halonums, outputs = load_indexing_data(DMOsim,1)
 
     times_tangos = main_halo.calculate_for_progenitors('t()')[0][::-1]
+
+    time_to_plot = times_tangos[np.argmin(abs(times_tangos-time_to_plot))]
     
     output_number = np.where(times_tangos <= time_to_plot)[0][-1]
   
@@ -50,8 +53,8 @@ def edge_plot_tagged_vs_hydro_mass_dist(name_of_DMO_simulation, name_of_HYDRO_si
 
     h = s.halos()[int(halonums[output_number] - 1)]
     
-    pynbody.analysis.halo.center(h)
-
+    pynbody.analysis.halo.center(h.dm)
+    #pynbody.analysis.angmom.faceon(h.dm)
     r200_DMO = pynbody.analysis.halo.virial_radius(h, overden=200, r_max=None, rho_def='critical')
 
     selected_parts = h.dm[np.isin(h.dm['iord'],tagged_iords)]
@@ -60,11 +63,25 @@ def edge_plot_tagged_vs_hydro_mass_dist(name_of_DMO_simulation, name_of_HYDRO_si
     idxs_m = [np.where(tagged_iords == i)[0][0] for i in selected_parts['iord']]
 
     selected_masses = [tagged_m[i] for i in idxs_m]
+    
+    '''
+    st_ages = calc_ages(d[ d['t'] <= time_to_plot ],time_to_plot)
 
-    data_all_tagged = pd.DataFrame({'x':selected_parts['x'],'y':selected_parts['y'], 'masses':np.asarray(selected_masses)})
+    grouped_first = d[ d['t'] <= time_to_plot ].groupby(['iords']).first()
+    
+    ages_df = pd.DataFrame({'ages':st_ages , 'iords':grouped_first.index.values}).groupby(['iords']).last()
+
+    ordered_ages = np.asarray([ ages_df.loc[part_id]['ages'] for part_id in selected_parts['iord'] ])
+    
+    lums = calc_luminosity(ordered_ages)
+                                                                    
+    '''
+    data_all_tagged = pd.DataFrame({ 'x':selected_parts['x'], 'y':selected_parts['y'], 'masses':np.asarray(selected_masses) })
+    #, 'lums':lums, 'ages':ordered_ages })
 
 
-    dataframe_for_hist = pd.DataFrame({'r':np.sqrt(selected_parts['x']**2+selected_parts['y']**2+selected_parts['z']**2), 'masses':np.asarray(selected_masses)})
+    dataframe_for_hist = pd.DataFrame({'r':selected_parts['r'], 'masses': np.asarray(selected_masses) })
+    #, 'ages': np.asarray(ordered_ages)})
 
     print(data_all_tagged.head())
     
@@ -75,8 +92,9 @@ def edge_plot_tagged_vs_hydro_mass_dist(name_of_DMO_simulation, name_of_HYDRO_si
     
     # plotting hydro particles 
 
-    sim = tangos.get_simulation('Halo1459_fiducial')
+    sim = tangos.get_simulation(name_of_HYDRO_simulation)
     t_all_H,red_all_h, HYDRO_main_halo, HYDRO_halonums, outputs_HYDRO = load_indexing_data(sim,1)
+
     
     times_tangos_HYDRO = HYDRO_main_halo.calculate_for_progenitors('t()')[0][::-1]
 
@@ -94,6 +112,8 @@ def edge_plot_tagged_vs_hydro_mass_dist(name_of_DMO_simulation, name_of_HYDRO_si
     
     pynbody.analysis.halo.center(h_hydro)
 
+    #pynbody.analysis.angmom.faceon(h_hydro.st)
+
     r200_hydro = pynbody.analysis.halo.virial_radius(h_hydro, overden=200, r_max=None, rho_def='critical')
 
     stars = s_hydro.st[get_dist(s_hydro.st['pos'])<=r200_hydro]
@@ -105,12 +125,14 @@ def edge_plot_tagged_vs_hydro_mass_dist(name_of_DMO_simulation, name_of_HYDRO_si
 
       plt.gca().set_box_aspect(1)
       
-      sns.kdeplot(data = data_all_tagged, x='x',y='y',weights='masses',fill=True,cmap="viridis",levels=5)
-      sns.kdeplot(data = data_all_stars,x ='x',y='y', weights='masses',fill=False,color='white',levels=5)
+      sns.kdeplot(data = data_all_tagged, x='x',y='y',weights='masses',fill=True,levels=5,cmap="viridis")#,cbar=True) #label='Tagged Stellar Mass')
+      sns.kdeplot(data = data_all_stars, x ='x',y='y', weights='masses',fill=False,levels=5,color='white')#,cbar=True)
        
       plt.xlim(4,-4)
       plt.ylim(4,-4)
-
+      
+      #plt.colorbar()
+      
       plt.title(str(name_of_HYDRO_simulation))
   
     if plot_type == '1D Mass Enclosed':
@@ -141,6 +163,45 @@ def edge_plot_tagged_vs_hydro_mass_dist(name_of_DMO_simulation, name_of_HYDRO_si
       
       plt.ylabel('Stellar Mass in $M_{\odot}$')
       plt.xlabel('Radial Distance in Kpc')
+
+    if plot_type == '1D Ages Hist':
+        plt.hist(dataframe_for_hist['ages'].values,histtype='step',weights=dataframe_for_hist['masses'].values)
+
+        #plt.xlim(0,1)
+        
+        plt.title(str(name_of_HYDRO_simulation))
+        
+        plt.title('Stellar Age in Gyr')
+                                    
+
+    if plot_type == 'Median Age Vs Radius':
+
+        bins = np.arange(0,1,1/10)
+        
+        dataframe_for_hist['r_bins'] = pd.cut(dataframe_for_hist['r'],bins)
+
+        df_grp = dataframe_for_hist.groupby(['r_bins']).median()
+
+        df_r_vals = [i.left for i in df_grp.index.values]
+        
+        plt.bar(df_r_vals,df_grp['ages'])
+
+        plt.xlabel('Radial Dist. in kpc')
+
+        plt.ylabel('Median stellar age Gyr')
+        
+    '''
+    if plot_type == '2D Luminosity Distribution':
+        plt.gca().set_box_aspect(1)
+
+        sns.kdeplot(data = data_all_tagged, x='x',y='y',weights='lums',fill=True,cmap="viridis",levels=5)
+        sns.kdeplot(data = data_all_stars,x ='x',y='y', weights='lums',fill=False,color='white',levels=5)
+        
+        plt.xlim(4,-4)
+        plt.ylim(4,-4)
+        
+        plt.title(str(name_of_HYDRO_simulation))
+    '''                                         
     
     return 
 
