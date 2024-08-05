@@ -203,7 +203,7 @@ def angmom_tag_particles_edge(sim_name,occupation_fraction,fmb_percentage,AHF_ce
         # load_tangos_data is a part of the 'utils.py' file in the tagging dir, it loads in the tangos database 'DMOsim' and returns the main halos tangos object, outputs and halonums at all timesteps
         # here haloidx_at_end or 0 here specifies the index associated with the main halo at the last snapshot in the tangos db's halo catalogue
         
-        DMOsim,main_halo,halonums,outputs = load_indexing_data(DMOname,1,machine=machine)
+        DMOsim,main_halo,halonums,outputs = load_indexing_data(DMOname,1,machine=machine,physics=physics)
         
         print('HALONUMS:---',len(halonums), "OUTPUTS---",len(outputs))
         
