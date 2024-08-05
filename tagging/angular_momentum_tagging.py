@@ -364,10 +364,7 @@ def angmom_tag_over_full_sim(DMOsim, free_param_value = 0.01, pynbody_path  = No
                 print('could not calculate R200c')                                                                                                                                                            
                 continue                                                                                                                                                                                      
                                                                                                                                                                             
-            
-            
-            #pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
-            
+                        
             DMOparticles_insitu_only = DMOparticles[sqrt(DMOparticles['pos'][:,0]**2 + DMOparticles['pos'][:,1]**2 + DMOparticles['pos'][:,2]**2) <= r200c_pyn ] #hDMO['r200c']]
 
             #print('angular_momentum: ', DMOparticles["j"])
@@ -542,7 +539,8 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
 
     '''
 
-    Given a tangos simulation, the function performs angular momentum based tagging over all its snapshots. 
+    Given a tangos simulation, the function performs angular momentum based tagging over all its snapshots.
+    Recursively tags accreting halos down the merger tree over their entire lifetimes 
 
     Inputs: 
 
@@ -567,8 +565,6 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
     # load in the DMO sim to get particle data and get accurate halonums for the main halo in each snapshot
     # load_tangos_data is a part of the 'utils.py' file in the tagging dir, it loads in the tangos database 'DMOsim' and returns the main halos tangos object, outputs and halonums at all timesteps
     
-    #t_all, red_all, main_halo,halonums,outputs = load_indexing_data(DMOsim,halonumber)
-
     # load-in tangos data 
     main_halo = DMOsim.timesteps[tstep].halos[int(halonumber) - 1]
 
@@ -768,11 +764,8 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
                                                                                                                                                                             
             
             
-            #pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
             
             DMOparticles_insitu_only = DMOparticles[sqrt(DMOparticles['pos'][:,0]**2 + DMOparticles['pos'][:,1]**2 + DMOparticles['pos'][:,2]**2) <= r200c_pyn ] #hDMO['r200c']]
-
-            #print('angular_momentum: ', DMOparticles["j"])
             
             DMOparticles_insitu_only = DMOparticles_insitu_only[np.logical_not(np.isin(DMOparticles_insitu_only['iord'],subhalo_iords))]
             
@@ -801,7 +794,6 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
 
             del DMOparticles_insitu_only
             
-            #print('moving onto mergers loop')
             #get mergers ----------------------------------------------------------------------------------------------------------------
             # check whether current the snapshot has a the redshift just before the merger occurs.
         
@@ -836,7 +828,6 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
                         continue
                 try:
                     t_2,redshift_2,vsmooth_2,sfh_in2,mstar_in2,mstar_merging = DarkLight(hDM,occupation=occupation_frac, pre_method='fiducial_with_turnover', post_scatter_method='flat', DMO=True)
-                    #,poccupied=occupation_frac,mergers=True)
                     
                 except Exception as e :
                     print(e)
@@ -853,7 +844,6 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
                 acc_halo_path = hDM.calculate_for_progenitors('path()')
                 print('halonum merging:',hDM.calculate_for_progenitors('halo_number()'))
                 halonumber_hDM = hDM.calculate_for_progenitors('halo_number()')[0][0]
-                #if len(hDM.calculate_for_progenitors('halo_number()')[0])>0 else hDM.calculate_for_progenitors('halo_number()')[0][0]
 
                 print('halonum merging:',halonumber_hDM)
                 
@@ -872,11 +862,9 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
                 else:
                     
                     if len(mstar_merging)==0:
-                        #mstars_total_darklight = np.append(mstars_total_darklight,0.0)
                         continue
     
                     mass_select_merge= mstar_merging[-1] - mstar_merging[-2]  if len(mstar_merging) > 1 else mstar_merging[-1]
-                    #mstars_total_darklight = np.append(mstars_total_darklight,mass_select_merge)
     
                     print(mass_select_merge)
                     if int(mass_select_merge)<1:
@@ -927,7 +915,6 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
                         print('assinging stars to accreted particles')
     
                         selected_particles,array_to_write_accreted = assign_stars_to_particles(mass_select_merge,accreted_particles_sorted_by_angmom,float(free_param_value),selected_particles = selected_particles,total_stellar_mass = mass_select_merge)
-                        
                         
     
                         tagged_iords_to_write = np.append(tagged_iords_to_write,array_to_write_accreted[0])
