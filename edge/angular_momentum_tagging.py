@@ -87,7 +87,7 @@ def get_child_iords(halo,halo_catalog,DMOstate='fiducial'):
 
 pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
 
-def angmom_tag_particles_edge(sim_name,occupation_fraction,fmb_percentage,AHF_centers_file=None,mergers = True,AHF_centers_supplied=False,machine='astro'):
+def angmom_tag_particles_edge(sim_name,occupation_fraction,fmb_percentage,AHF_centers_file=None,mergers = True,AHF_centers_supplied=False,machine='astro',physics='edge1'):
     
     '''
     Function that tags particles based on angular momentum for DMOs in the EDGE suite.  
@@ -98,19 +98,6 @@ def angmom_tag_particles_edge(sim_name,occupation_fraction,fmb_percentage,AHF_ce
     mergers = boolean specifying whether to tag accreting halos 
     machine = string, one of Astro or Dirac
     
-    '''
-    if machine == 'astro':
-        #used paths
-        tangos_path_edge     = '/vol/ph/astro_data/shared/morkney/EDGE/tangos/'
-        tangos_path_chimera  = '/vol/ph/astro_data/shared/etaylor/CHIMERA/'
-        pynbody_path_edge    = '/vol/ph/astro_data/shared/morkney/EDGE/'
-        pynbody_path_chimera = '/vol/ph/astro_data/shared/etaylor/CHIMERA/'
-        pynbody_edge_gm =  '/vol/ph/astro_data2/shared/morkney/EDGE_GM/'
-
-    if machine == 'dirac':
-        print('not yet implemented')
-        exit()
-    '''
     
     Halos Available on Astro server Surrey
 
@@ -163,18 +150,49 @@ def angmom_tag_particles_edge(sim_name,occupation_fraction,fmb_percentage,AHF_ce
         elif len(split)==2 and simname[-3:] == '_RT':  shortname += 'RT'
 
         DMOname = simname 
+
+        
+        if machine == 'dirac':
+            if halonum=='383':
+                tangos_path = '/scratch/dp101/shared/EDGE/tangos/'
+            elif halonum=='153' or halonum=='261' or halonum=='339':
+                tangos_path = '/scratch/dp191/shared/tangos/'
+            else:
+                # need to add support for EDGE1 reruns once databases made.
+                tangos_path = '/scratch/dp101/shared/EDGE/tangos/'
+                
+            if physics == 'edge1':
+    
+                if halonum=='383':
+                    pynbody_path = '/scratch/dp191/shared/CHIMERA/{0}/'.format(simname)
+                else:
+                    pynbody_path = '/scratch/dp101/shared/EDGE/{0}/'.format('void_volume' if simname=='void' else simname)
+    
+            elif physics=='edge2':
+    
+                if halonum=='153' or halonum=='261' or halonum=='339':
+                    pynbody_path = '/scratch/dp191/shared/EDGE2_simulations/{0}/'.format(simname)
+                else:
+                    pynbody_path = '/scratch/dp191/shared/RT_rerun_simulations/{0}/'.format(simname)
+
         
         # set the correct paths to data files
         
-        if halonum == '383':
-            tangos_path  = tangos_path_chimera
-            pynbody_path = pynbody_path_chimera 
-        else:
-            tangos_path  = tangos_path_edge
-            pynbody_path = pynbody_path_edge if halonum == shortname else pynbody_edge_gm
-        
-        
-        #pynbody_path = darklight.edge.get_pynbody_path(DMOname)
+        if machine == 'astro':
+            #used paths
+            tangos_path_edge     = '/vol/ph/astro_data/shared/morkney/EDGE/tangos/'
+            tangos_path_chimera  = '/vol/ph/astro_data/shared/etaylor/CHIMERA/'
+            pynbody_path_edge    = '/vol/ph/astro_data/shared/morkney/EDGE/'
+            pynbody_path_chimera = '/vol/ph/astro_data/shared/etaylor/CHIMERA/'
+            pynbody_edge_gm =  '/vol/ph/astro_data2/shared/morkney/EDGE_GM/'
+            
+            if halonum == '383':
+                tangos_path  = tangos_path_chimera
+                pynbody_path = pynbody_path_chimera 
+            else:
+                tangos_path  = tangos_path_edge
+                pynbody_path = pynbody_path_edge if halonum == shortname else pynbody_edge_gm
+            
 
         # get particle data at z=0 for DMO sims, if available
         if DMOname==None:
@@ -185,7 +203,7 @@ def angmom_tag_particles_edge(sim_name,occupation_fraction,fmb_percentage,AHF_ce
         # load_tangos_data is a part of the 'utils.py' file in the tagging dir, it loads in the tangos database 'DMOsim' and returns the main halos tangos object, outputs and halonums at all timesteps
         # here haloidx_at_end or 0 here specifies the index associated with the main halo at the last snapshot in the tangos db's halo catalogue
         
-        DMOsim,main_halo,halonums,outputs = load_indexing_data(DMOname,1,machine=machine)
+        DMOsim,main_halo,halonums,outputs = load_indexing_data(DMOname,1,machine=machine,physics=physics)
         
         print('HALONUMS:---',len(halonums), "OUTPUTS---",len(outputs))
         
@@ -206,7 +224,7 @@ def angmom_tag_particles_edge(sim_name,occupation_fraction,fmb_percentage,AHF_ce
             print('output array length does not match redshift and time arrays')
 
 
-        df_tagged_particles = ptag.angmom_tag_over_full_sim_recursive(DMOsim,-1, 1, free_param_value = 0.01, pynbody_path  = pynbody_path, occupation_frac = 'edge1',mergers = True)
+        df_tagged_particles = ptag.angmom_tag_over_full_sim_recursive(DMOsim,-1, 1, free_param_value = 0.01, pynbody_path  = pynbody_path, occupation_frac = 'edge1')
 
     return df_tagged_particles
 

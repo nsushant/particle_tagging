@@ -21,9 +21,9 @@ def get_dist(pos):
                     
 
 
-def load_indexing_data(DMOname,halo_number,machine='astro'):
+def load_indexing_data(DMOname,halo_number,machine='astro',physics='edge1'):
     
-    DMOsim = darklight.edge.load_tangos_data(DMOname,machine=machine)
+    DMOsim = darklight.edge.load_tangos_data(DMOname,machine=machine,physics=physics)
     main_halo = DMOsim.timesteps[-1].halos[int(halo_number) - 1]
     halonums = main_halo.calculate_for_progenitors('halo_number()')[0][::-1]
     times_valid = main_halo.calculate_for_progenitors('t()')[0][::-1]
