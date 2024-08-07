@@ -125,7 +125,7 @@ def angmom_tag_particles_edge(sim_name,occupation_fraction,fmb_percentage,AHF_ce
     pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
     
     sims = [str(sim_name)]
-
+    '''
     # open the file in the write mode
     with open(, 'w') as particle_storage_file:
         # create the csv writer
@@ -133,7 +133,7 @@ def angmom_tag_particles_edge(sim_name,occupation_fraction,fmb_percentage,AHF_ce
         header = ['iords','mstar','t','z','type']
         # write a row to the csv file
         writer.writerow(header)
-
+    '''
 
 
         
