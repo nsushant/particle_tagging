@@ -150,7 +150,7 @@ def calculate_reffs_over_full_sim(DMOsim, particles_tagged,  pynbody_path  = Non
     if ( len(red_all) != len(outputs) ) : 
         print('output array length does not match redshift and time arrays')
 
-    data_particles = pd.read_csv(particles_tagged)
+    data_particles = pd.read_csv(particles_tagged) if from_dataframe==False else particles_tagged
 
     #print('data parts',data_particles['t'])
 
