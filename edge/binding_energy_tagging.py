@@ -25,12 +25,12 @@ from tangos.examples.mergers import *
 import random
 import sys
 import pandas as pd
-import particle_tagging.tagging.angular_momentum_tagging as ptag
+import particle_tagging.tagging.binding_energy_tagging as ptag
 from particle_tagging.edge.utils import *
 from particle_tagging.analysis.calculate import * 
 
 
-def get_child_iords(halo,halo_catalog,DMO_state='fiducial'):
+def get_child_iords(halo,halo_catalog,DMOstate='fiducial'):
 
     '''
     
@@ -53,6 +53,7 @@ def get_child_iords(halo,halo_catalog,DMO_state='fiducial'):
 
         #print(children_halonums)                                                                                                                                                                                                                              
 
+
         for child in children_halonums:
 
             if (len(halo_catalog[child].dm['iord']) > 0):
@@ -69,7 +70,7 @@ def get_child_iords(halo,halo_catalog,DMO_state='fiducial'):
 
             if (np.isin('children',list(halo_catalog[child].properties.keys())) == True) :
 
-                dm_2nd_gen,st_2nd_gen,sub_halonums_2nd_gen = get_child_iords(halo_catalog[child],halo_catalog,DMO_state)
+                dm_2nd_gen,st_2nd_gen,sub_halonums_2nd_gen = get_child_iords(halo_catalog[child],halo_catalog,DMOstate)
 
                 children_dm = np.append(children_dm,dm_2nd_gen)
                 children_st = np.append(children_st,st_2nd_gen)
@@ -86,7 +87,7 @@ def get_child_iords(halo,halo_catalog,DMO_state='fiducial'):
 
 pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
 
-def angmom_tag_particles_edge(sim_name,occupation_fraction,fmb_percentage,AHF_centers_filepath=None,mergers = True,AHF_centers_supplied=False,machine='astro',physics='edge1',recursive=True):
+def BE_tag_particles_edge(sim_name,occupation_fraction,fmb_percentage,PE_file = None,AHF_centers_file=None,mergers = True,AHF_centers_supplied=False,machine='astro',physics='edge1'):
     
     '''
     Function that tags particles based on angular momentum for DMOs in the EDGE suite.  
@@ -120,8 +121,9 @@ def angmom_tag_particles_edge(sim_name,occupation_fraction,fmb_percentage,AHF_ce
         # write a row to the csv file
         writer.writerow(header)
     '''
-
     
+    
+
         
     # iterating over all the simulations in the 'sims' list
     for isim,simname in enumerate(sims):
@@ -206,6 +208,12 @@ def angmom_tag_particles_edge(sim_name,occupation_fraction,fmb_percentage,AHF_ce
         
         print('HALONUMS:---',len(halonums), "OUTPUTS---",len(outputs))
         
+        # Get stellar masses at each redshift using darklight for insitu tagging (mergers = False excludes accreted mass)
+        #t,redshift,vsmooth,sfh_insitu,mstar_s_insitu,mstar_total = DarkLight(main_halo,DMO=True,mergers = False,occupation='edge1', pre_method='fiducial_with_turnover', post_scatter_method='flat')
+
+        #calculate when the mergers took place and grab all the tangos halo objects involved in the merger (zmerge = merger redshift, hmerge = merging halo objects,qmerge = merger ratio)
+        zmerge, qmerge, hmerge = get_mergers_of_major_progenitor(main_halo)
+        
         # The redshifts and times (Gyr) of all snapshots of the given simulation from the tangos database
         red_all = main_halo.calculate_for_progenitors('z()')[0][::-1]
         #np.array([ DMOsim.timesteps[i].__dict__['redshift'] for i in range(len(DMOsim.timesteps)) ])
@@ -216,11 +224,10 @@ def angmom_tag_particles_edge(sim_name,occupation_fraction,fmb_percentage,AHF_ce
 
             print('output array length does not match redshift and time arrays')
 
-        if recursive==True:
-            df_tagged_particles,l_sel = ptag.angmom_tag_over_full_sim_recursive(DMOsim,-1, 1, free_param_value = fmb_percentage, pynbody_path  = os.path.join(pynbody_path,str(simname)),AHF_centers_filepath=AHF_centers_filepath)
+
+        df_tagged_particles,l_sel = ptag.BE_tag_over_full_sim_recursive(DMOsim,-1, 1, free_param_value = fmb_percentage,PE_file=PE_file,pynbody_path  = pynbody_path, occupation_frac = 'edge1')
         
-        else:
-            df_tagged_particles = ptag.angmom_tag_over_full_sim(DMOsim, free_param_value = fmb_percentage, pynbody_path= os.path.join(pynbody_path,str(simname)) )
+        #df_tagged_particles = ptag.BE_tag_over_full_sim(DMOsim, free_param_value = 0.01, PE_file=PE_file,pynbody_path  = pynbody_path, occupation_frac = 'all')
         return df_tagged_particles
 
 
@@ -244,7 +251,6 @@ def center_on_tagged(radial_dists,mass):
 
 def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_file=None,from_file = False,from_dataframe=False,save_to_file=True,AHF_centers_supplied=False,machine='astro',physics='edge1'):
     #used paths
-    
     tangos_path_edge     = '/vol/ph/astro_data/shared/morkney/EDGE/tangos/'
     tangos_path_chimera  = '/vol/ph/astro_data/shared/etaylor/CHIMERA/'
     pynbody_path_edge    = '/vol/ph/astro_data/shared/morkney/EDGE/'
@@ -260,26 +266,9 @@ def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_fi
     'Halo1445_RT','Halo1459_RT'
 
     '''
-     
-    path_AHF_halonums = "AHF_halonums/DMO/"+sim_name+".csv"
-    
-    AHF_halonums = None
+    pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
+                    
 
-    if os.path.isfile(path_AHF_halonums): 
-
-        AHF_halonums = pd.read_csv(path_AHF_halonums) 
-
-        if len(AHF_halonums['snapshot']) > 0:
-            pynbody.config["halo-class-priority"] = [pynbody.halo.ahf.AHFCatalogue]            
-
-        else:
-            print("AHF halonums file at "+path_AHF_halonums+" is empty, using HOP catalogue")
-            pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
-    else: 
-        print("AHF halonumsfile at"+path_AHF_halonums+" does not exist, using HOP catalogue")
-        pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
-    
-    
     sims = [str(sim_name)]
 
     for isim,simname in enumerate(sims):
@@ -355,23 +344,22 @@ def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_fi
             continue
         
         DMOsim,main_halo,halonums,outputs = load_indexing_data(DMOname,1,machine=machine,physics=physics)
-                    
+        
         #outputs = np.array([DMOsim.timesteps[i].__dict__['extension'] for i in range(len(DMOsim.timesteps))])[-len(halonums):]
 
         print(outputs)
         
-        #snapshots = [ f for f in listdir(pynbody_path+DMOname) if (isdir(join(pynbody_path,DMOname,f)) and f[:6]=='output') ]
+        snapshots = [ f for f in listdir(pynbody_path+DMOname) if (isdir(join(pynbody_path,DMOname,f)) and f[:6]=='output') ]
         
         #sort the list of snapshots in ascending order
 
-        #snapshots.sort()
+        snapshots.sort()
 
-    
+        
         red_all =  main_halo.calculate_for_progenitors('z()')[0][::-1]
         #np.array([DMOsim.timesteps[i].__dict__['redshift'] for i in range(len(DMOsim.timesteps)) ])
         t_all =  main_halo.calculate_for_progenitors('t()')[0][::-1]
         #np.array([DMOsim.timesteps[i].__dict__['time_gyr'] for i in range(len(DMOsim.timesteps)) ])
-        
 
         #load in the two files containing the particle data
         if ( len(red_all) != len(outputs) ) : 
@@ -399,6 +387,7 @@ def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_fi
 
             gc.collect()
 
+            
             if len(np.where(data_t <= float(t_all[i]))) == 0:
                 continue
 
@@ -431,11 +420,7 @@ def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_fi
             hDMO = tangos.get_halo(DMOname+'/'+outputs[i]+'/halo_'+str(halonums[i]))
                 
             print(hDMO)
-            
-            pynbody.config["halo-class-priority"] = [pynbody.halo.ahf.AHFCatalogue]
-            if type(AHF_halonums) == type(None):
-                pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
-
+                
             #for  the given path,entry,snapshot at given index generate a string that includes them
             simfn = join(pynbody_path,DMOname,outputs[i])
             
@@ -449,23 +434,14 @@ def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_fi
             
             # once the data from the snapshot has been loaded, .physical_units()
             # converts all array’s units to be consistent with the distance, velocity, mass basis units specified.
-            #DMOparticles.physical_units()
+            DMOparticles.physical_units()
 
             
+
             try:
                 if AHF_centers_supplied==False:
+                    h = DMOparticles.halos()[int(halonums[i])-1]
                     
-                    if type(AHF_halonums) != type(None):
-                        print('halonums cat', DMOparticles.halos(halo_numbers='v1'),DMOparticles.halos(halo_numbers='v1').keys())
-                        halonum_snap = AHF_halonums[AHF_halonums["snapshot"] == str(outputs[i])]["AHF halonum"].values
-                        
-                        h = DMOparticles.halos(halo_numbers='v1')[int(halonum_snap)]                        
-                        
-                    else:
-                        #pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
-                        h = DMOparticles.halos(halo_numbers='v1')[int(halonums[i])-1]
-    
-
                 elif AHF_centers_supplied == True:
                     pynbody.config["halo-class-priority"] = [pynbody.halo.ahf.AHFCatalogue]
                     
@@ -491,14 +467,12 @@ def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_fi
                                                                                                                                                  
                     h = h[np.logical_not(np.isin(h['iord'],subhalo_iords))] if len(subhalo_iords) >0 else h
                     
-                
-                children_dm,children_st,sub_halonums = get_child_iords(h,DMOparticles.halos(halo_numbers='v1'),DMO_state='DMO')
-                
-                DMOparticles.physical_units()    
+
+                    
                 pynbody.analysis.halo.center(h)
 
-            except Exception as e:
-                print('centering data unavailable',e)
+            except:
+                print('centering data unavailable')
                 continue
 
 
@@ -509,18 +483,13 @@ def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_fi
                 print('could not calculate R200c')
                 continue
             
-        
-
             DMOparticles = DMOparticles[sqrt(DMOparticles['pos'][:,0]**2 + DMOparticles['pos'][:,1]**2 + DMOparticles['pos'][:,2]**2) <= r200c_pyn ]        
-            
-            DMOparticles = DMOparticles[np.logical_not(np.isin(DMOparticles['iord'],children_dm))]
 
             particle_selection_reff_tot = DMOparticles[np.isin(DMOparticles['iord'],selected_iords_tot)] if len(selected_iords_tot)>0 else []
-            
-            particles_only_insitu = DMOparticles[np.isin(DMOparticles['iord'],selected_iords_insitu_only)] if len(selected_iords_insitu_only) > 0 else []
-            
 
-            #print('m200 value---->',hDMO['M200c'])
+            particles_only_insitu = DMOparticles[np.isin(DMOparticles['iord'],selected_iords_insitu_only)] if len(selected_iords_insitu_only) > 0 else []
+
+            print('m200 value---->',hDMO['M200c'])
             
             if (len(particle_selection_reff_tot))==0:
                 print('skipped!')

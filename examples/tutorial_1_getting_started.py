@@ -3,7 +3,7 @@
 import pynbody
 import tangos
 
-import particle_tagging_package as ptag 
+import particle_tagging as ptag 
 import matplotlib.pyplot as plt 
 
 # specify preference of halo catalog
