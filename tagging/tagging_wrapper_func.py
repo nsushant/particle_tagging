@@ -55,19 +55,19 @@ def get_child_iords(halo,halo_catalog,DMO_state='fiducial'):
 
 
 
-def tag_particles(DMO_database, path_to_particle_data = None, tagging_method = 'angular momentum', free_param_val = 0.01, include_mergers = True, darklight_occupation_frac = 'all' ):
+def tag_particles(DMO_database, path_to_particle_data = None, tagging_method = 'angular momentum', free_param_val = 0.01, include_mergers = True, halonumber = 1):
 
-    # By default runs non recursive versions 
-    
     if tagging_method == 'angular momentum':
-      
-      df_tagged = angmom_tag_over_full_sim(DMO_database, free_param_value = free_param_val, pynbody_path  = path_to_particle_data, mergers = include_mergers)
-      
+        
+        df_tagged = angmom_tag_over_full_sim(DMO_database, free_param_value = free_param_val, pynbody_path  = path_to_particle_data, mergers = include_mergers)
+
+    if tagging_method == "angular momentum recursive":
+
+        df_tagged,l = angmom_tag_over_full_sim_recursive(DMO_database, -1, 1, free_param_value = free_param_val, pynbody_path  = path_to_particle_data ):
 
     if tagging_method == 'spatial' : 
-
-      df_tagged = spatial_tag_over_full_sim(DMO_database, pynbody_path  = path_to_particle_data, occupation_frac = darklight_occupation_frac, particle_storage_filename=None, mergers= include_mergers)
-
+        
+        df_tagged = spatial_tag_over_full_sim(DMO_database, pynbody_path  = path_to_particle_data, occupation_frac = 2.5e7, particle_storage_filename=None, mergers= include_mergers)
     
     return df_tagged
 
