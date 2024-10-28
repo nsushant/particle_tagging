@@ -111,7 +111,7 @@ def calculate_reffs_over_full_sim(DMOsim, particles_tagged,  pynbody_path  = Non
         elif halonum=='1459' and split[-1][-2:] == '12': shortname += 'mr12'
         else:
             print('unsupported simulation',simname,'! Not sure what shortname to give it. Aborting...')
-            continue
+            exit()
     elif len(split)==2 and simname[-3:] == '_RT':  shortname += 'RT'
 
     if simname[-3] == 'x':
@@ -123,7 +123,7 @@ def calculate_reffs_over_full_sim(DMOsim, particles_tagged,  pynbody_path  = Non
     # get particle data at z=0 for DMO sims, if available
     if DMOname==None:
         print('--> DMO particle does not data exists, skipping!')
-        continue
+        exit()
                     
     main_halo = DMOsim.timesteps[-1].halos[int(halo_number) - 1]
     
