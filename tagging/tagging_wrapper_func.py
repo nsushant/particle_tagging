@@ -63,7 +63,7 @@ def tag_particles(DMO_database, path_to_particle_data = None, tagging_method = '
 
     if tagging_method == "angular momentum recursive":
 
-        df_tagged,l = angmom_tag_over_full_sim_recursive(DMO_database, -1, 1, free_param_value = free_param_val, pynbody_path  = path_to_particle_data ):
+        df_tagged,l = angmom_tag_over_full_sim_recursive(DMO_database, -1, halonumber, free_param_value = free_param_val, pynbody_path  = path_to_particle_data ):
 
     if tagging_method == 'spatial' : 
         
