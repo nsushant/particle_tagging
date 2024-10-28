@@ -1,3 +1,6 @@
+
+####### Under Construction #######
+
 import pynbody
 import pandas as pd
 import numpy as np
@@ -111,11 +114,8 @@ def edge_plot_tagged_vs_hydro_mass_dist(name_of_DMO_simulation, name_of_HYDRO_si
 
     sim = tangos.get_simulation(name_of_HYDRO_simulation)
 
-    # returns Fe mass ratios , Hydrogen mass ratios , Oxygen mass ratios                                                                                                                                                                                      
     t_all_H,red_all_h, HYDRO_main_halo, HYDRO_halonums, outputs_HYDRO = load_indexing_data(sim,1)
     
-    #metals_hydro = HYDRO_main_halo['iron_hydrogen_ratios']
-
     times_tangos_HYDRO = HYDRO_main_halo.calculate_for_progenitors('t()')[0][::-1]
 
     halonums_hydro = HYDRO_main_halo.calculate_for_progenitors('halo_number()')[0][::-1]
@@ -126,7 +126,6 @@ def edge_plot_tagged_vs_hydro_mass_dist(name_of_DMO_simulation, name_of_HYDRO_si
     
     h_hydro = s_hydro.halos()[int(halonums_hydro[output_number_HYDRO] - 1)]    
 
-    # correcting metallicities                                                                                                                                                                                                                                    
     s_hydro.physical_units() 
     
     etp.stars.StellarProperty._ensure_ramses_metal_are_corrected(s_hydro)
@@ -135,9 +134,6 @@ def edge_plot_tagged_vs_hydro_mass_dist(name_of_DMO_simulation, name_of_HYDRO_si
 
     pynbody.analysis.halo.center(h_hydro)
     
-    #mass_ratios = abundances._get_mass_fractions(h_hydro.st)
-    #print('mass ratios----->',mass_ratios)
-    #pynbody.analysis.angmom.faceon(h_hydro.st)
 
     r200_hydro = pynbody.analysis.halo.virial_radius(h_hydro, overden=200, r_max=None, rho_def='critical')
     
@@ -147,7 +143,7 @@ def edge_plot_tagged_vs_hydro_mass_dist(name_of_DMO_simulation, name_of_HYDRO_si
     
     stars = stars[etp.stars.AbundanceRatios._mask_stars_with_zero_iron_metallicity(stars)]
 
-    ########stars['pos'] -= calc_3D_cm(stars,stars['mass'])
+    stars['pos'] -= calc_3D_cm(stars,stars['mass'])
 
     #mass_ratios = abundances._get_mass_fractions(stars)
 
