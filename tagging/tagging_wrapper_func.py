@@ -78,19 +78,24 @@ def calculate_reffs_over_full_sim(DMOsim, particles_tagged,  pynbody_path  = Non
     
     AHF_halonums = None
 
-    if os.path.isfile(path_AHF_halonums): 
-
-        AHF_halonums = pd.read_csv(path_AHF_halonums) 
-
-        if len(AHF_halonums['snapshot']) > 0:
-            pynbody.config["halo-class-priority"] = [pynbody.halo.ahf.AHFCatalogue]            
-
-        else:
-            print("AHF halonums file at "+path_AHF_halonums+" is empty, using HOP catalogue")
-            pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
-    else: 
-        print("AHF halonumsfile at"+path_AHF_halonums+" does not exist, using HOP catalogue")
+    if type(path_AHF_halonums) == type(None): 
+        print("Proceeding with HOP catalogue")
         pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
+
+    else:
+        if os.path.isfile(path_AHF_halonums): 
+    
+            AHF_halonums = pd.read_csv(path_AHF_halonums) 
+    
+            if len(AHF_halonums['snapshot']) > 0:
+                pynbody.config["halo-class-priority"] = [pynbody.halo.ahf.AHFCatalogue]            
+    
+            else:
+                print("AHF halonums file at "+path_AHF_halonums+" is empty, using HOP catalogue")
+                pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
+        else: 
+            print("AHF halonumsfile at"+path_AHF_halonums+" does not exist, using HOP catalogue")
+            pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
 
 
     simname = DMOsim.path
@@ -292,7 +297,6 @@ def calculate_reffs_over_full_sim(DMOsim, particles_tagged,  pynbody_path  = Non
             print('skipped!')
             continue
         else:
-
     
             masses = [ data_grouped.loc[n]['mstar'] for n in particle_selection_reff_tot['iord']]
 
@@ -338,7 +342,6 @@ def calculate_reffs_over_full_sim(DMOsim, particles_tagged,  pynbody_path  = Non
             print('halfmass radius:',R_half)
             print('Kravtsov_radius:',kravtsov)
             
-        
 
         print('---------------------------------------------------------------writing output file --------------------------------------------------------------------')
 
