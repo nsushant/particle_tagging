@@ -57,7 +57,8 @@ def rank_order_particles_by_BE(DMOparticles, hDMO, path_to_pe_file = None):
         
         pe = calculated_potentials
     
-    # if available, read in the potential energies for particles inside the r200 
+    # if available, read in the potential energies for particles inside the r200
+    # pe_file contains cols : iord, potential. A separate file is assumed to exist for each output. 
     else: 
         print('Reading in potential from ',path_to_pe_file)
         
@@ -215,10 +216,8 @@ def BE_tag_over_full_sim(DMOsim, free_param_value = 0.01, PE_file=None,pynbody_p
     t_all, red_all, main_halo,halonums,outputs = load_indexing_data(DMOsim,1)
     
     # Get stellar masses at each redshift using darklight for insitu tagging (mergers = False excludes accreted mass)
-    t,redshift,vsmooth,sfh_insitu,mstar_s_insitu,mstar_total =DarkLight(main_halo,occupation=occupation_frac, pre_method='fiducial_with_turnover', post_scatter_method='flat', DMO=True,mergers = False)
-    #DarkLight(main_halo,DMO=True,mergers = False)
-    #, poccupied=occupation_frac)
-
+    t,redshift,vsmooth,sfh_insitu,mstar_s_insitu,mstar_total =DarkLight(main_halo,nscatter=0,vthres=26.3,zre=4.,pre_method='fiducial',post_method='schechter',post_scatter_method='increasing',binning='3bins',timesteps='sim',mergers=False,DMO=True,occupation=2.5e7,fn_vmax=None)
+    
     #calculate when the mergers took place and grab all the tangos halo objects involved in the merger (zmerge = merger redshift, hmerge = merging halo objects,qmerge = merger ratio)
     zmerge, qmerge, hmerge = get_mergers_of_major_progenitor(main_halo)
     
@@ -364,31 +363,25 @@ def BE_tag_over_full_sim(DMOsim, free_param_value = 0.01, PE_file=None,pynbody_p
             elif AHF_centers_file != None:
                 pynbody.config["halo-class-priority"] = [pynbody.halo.ahf.AHFCatalogue]
                 
-                AHF_crossref = AHF_centers[AHF_centers['i'] == i]['AHF catalogue id'].values[0]
+                AHF_crossref = AHF_centers[AHF_centers['snapshot'] == outputs[i]]['AHF halonum'].values[0]
                 
-                h = DMOparticles.halos()[int(AHF_crossref)] 
-                    
-                children_ahf = AHF_centers[AHF_centers['i'] == i]['children'].values[0]
+                h = DMOparticles.halos(halo_numbers="v1")[int(AHF_crossref)] 
                 
-                child_str_l = children_ahf[0][1:-1].split()
-
-                children_ahf_int = list(map(float, child_str_l))                    
+                # the "children" are subhalos that need to be removed before centering on the main halo
+                children_ahf_int = h.properties['children']
             
-                halo_catalogue = DMOparticles.halos()
+                halo_catalogue = DMOparticles.halos(halo_numbers="v1")
             
                 subhalo_iords = np.array([])
                 
                 for ch in children_ahf_int:
                     
-                    subhalo_iords = np.append(subhalo_iords,halo_catalogue[int(ch)].dm['iord'])
-                
-
-                c = 0                  
-                
+                    if ch != AHF_crossref: 
+                        subhalo_iords = np.append(subhalo_iords,halo_catalogue[int(ch)].dm['iord'])
                                                                                                                                         
                 h = h[np.logical_not(np.isin(h['iord'],subhalo_iords))] if len(subhalo_iords) >0 else h
-            
 
+                                                                                                                                                
             pynbody.analysis.halo.center(h)
 
             pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
@@ -404,7 +397,7 @@ def BE_tag_over_full_sim(DMOsim, free_param_value = 0.01, PE_file=None,pynbody_p
                         
             DMOparticles_insitu_only = DMOparticles[sqrt(DMOparticles['pos'][:,0]**2 + DMOparticles['pos'][:,1]**2 + DMOparticles['pos'][:,2]**2) <= r200c_pyn ] 
             
-            DMOparticles_insitu_only = DMOparticles_insitu_only[np.logical_not(np.isin(DMOparticles_insitu_only['iord'],subhalo_iords))]
+            #DMOparticles_insitu_only = DMOparticles_insitu_only[np.logical_not(np.isin(DMOparticles_insitu_only['iord'],subhalo_iords))]
 
         
             if check_pe_file_exists == True: 
@@ -449,10 +442,6 @@ def BE_tag_over_full_sim(DMOsim, free_param_value = 0.01, PE_file=None,pynbody_p
             
             t_id = int(np.where(z_set_vals==red_all[i+1])[0][0])
 
-            #print('chosen merger particles ----------------------------------------------',len(chosen_merger_particles))
-            #loop over the merging halos and collect particles from each of them
-        
-            #mstars_total_darklight = np.array([])
             DMO_particles = 0 
             
             for hDM in hmerge_added[t_id][0]:
@@ -471,11 +460,9 @@ def BE_tag_over_full_sim(DMOsim, free_param_value = 0.01, PE_file=None,pynbody_p
                     if (np.random.random() > prob_occupied):
                         print('Skipped')
                         continue
-                #angmom_tag_over_full_sim(hDM, free_param_value = 0.01, pynbody_path  = pynbody_path, occupation_frac = 'all', mergers = True)
-
                 
                 try:
-                    t_2,redshift_2,vsmooth_2,sfh_in2,mstar_in2,mstar_merging = DarkLight(hDM,occupation=occupation_frac, pre_method='fiducial_with_turnover', post_scatter_method='flat',DMO=True,mergers = False)
+                    t_2,redshift_2,vsmooth_2,sfh_in2,mstar_in2,mstar_merging = DarkLight(hDM,nscatter=0,vthres=26.3,zre=4.,pre_method='fiducial',post_method='schechter',post_scatter_method='increasing',binning='3bins',timesteps='sim',mergers=False,DMO=True,occupation=2.5e7,fn_vmax=None)
                     #DarkLight(hDM,DMO=True)#,poccupied=occupation_frac,mergers=True)
                     print(len(t_2))
                     print(mstar_merging)
@@ -634,7 +621,6 @@ def BE_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_value = 
     # Get stellar masses at each redshift using darklight for insitu tagging (mergers = False excludes accreted mass)
     t,redshift,vsmooth,sfh_insitu,mstar_s_insitu,mstar_total = DarkLight(main_halo,nscatter=0,vthres=26.3,zre=4.,pre_method='fiducial',post_method='schechter',post_scatter_method='increasing',binning='3bins',timesteps='sim',mergers=False,DMO=True,occupation=2.5e7,fn_vmax=None)
 
-    #occupation=occupation_frac, pre_method='fiducial_with_turnover', post_scatter_method='flat', DMO=True,mergers = False)
 
     #calculate when the mergers took place and grab all the tangos halo objects involved in the merger (zmerge = merger redshift, hmerge = merging halo objects,qmerge = merger ratio)
     zmerge, qmerge, hmerge = get_mergers_of_major_progenitor(main_halo)
@@ -647,7 +633,6 @@ def BE_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_value = 
     
     hmerge_added, z_set_vals = group_mergers(zmerge,hmerge)
 
-    ##################################################### SECOND LOOP ###############################################################
     if type(selected_particles) == type(None):
         selected_particles = np.array([[np.nan],[np.nan]])
 
@@ -760,7 +745,6 @@ def BE_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_value = 
                 # converts all array’s units to be consistent with the distance, velocity, mass basis units specified.
                 DMOparticles.physical_units()
                 
-                #print('total energy  ---------------------------------------------------->',DMOparticles['te'])
                 print('loaded data insitu')
             
             # where this data isn't available, notify the user.
@@ -787,32 +771,26 @@ def BE_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_value = 
                 h = DMOparticles.halos()[int(halonums[i])-1]
 
             elif AHF_centers_file != None:
+                
                 pynbody.config["halo-class-priority"] = [pynbody.halo.ahf.AHFCatalogue]
                 
-                AHF_crossref = AHF_centers[AHF_centers['i'] == i]['AHF catalogue id'].values[0]
+                AHF_crossref = AHF_centers[AHF_centers['snapshot'] == outputs[i]]['AHF halonum'].values[0]
                 
-                h = DMOparticles.halos()[int(AHF_crossref)] 
-                    
-                children_ahf = AHF_centers[AHF_centers['i'] == i]['children'].values[0]
+                h = DMOparticles.halos(halo_numbers="v1")[int(AHF_crossref)] 
                 
-                child_str_l = children_ahf[0][1:-1].split()
-
-                children_ahf_int = list(map(float, child_str_l))                    
+                # the "children" are subhalos that need to be removed before centering on the main halo
+                children_ahf_int = h.properties['children']
             
-                halo_catalogue = DMOparticles.halos()
+                halo_catalogue = DMOparticles.halos(halo_numbers="v1")
             
                 subhalo_iords = np.array([])
                 
                 for ch in children_ahf_int:
                     
-                    subhalo_iords = np.append(subhalo_iords,halo_catalogue[int(ch)].dm['iord'])
-                
-
-                c = 0                  
-                
+                    if ch != AHF_crossref: 
+                        subhalo_iords = np.append(subhalo_iords,halo_catalogue[int(ch)].dm['iord'])
                                                                                                                                         
                 h = h[np.logical_not(np.isin(h['iord'],subhalo_iords))] if len(subhalo_iords) >0 else h
-            
 
             pynbody.analysis.halo.center(h)
 
@@ -1045,7 +1023,6 @@ def angmom_calculate_reffs_over_full_sim(DMOsim, data_particles_tagged, pynbody_
     DMOname = DMOsim.path
     
     t_all, red_all, main_halo,halonums,outputs = load_indexing_data(DMOsim,1)
-    print(outputs)
     
 
     #load in the two files containing the particle data
