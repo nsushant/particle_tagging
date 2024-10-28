@@ -580,8 +580,8 @@ def calculate_reffs_over_full_sim(DMOsim, data_particles_tagged, pynbody_path  =
 
 
 '''
-def calculate_rhalf(DMOsim, data_particles_tagged, pynbody_path  = None, path_AHF_halonums = None): 
+def calculate_rhalf(DMOsim, data_particles_tagged, pynbody_path  = None, path_AHF_halonums = None, from_dataframe=True,from_file=False): 
 
-    return calculate_reffs_over_full_sim( DMOsim, data_particles_tagged, pynbody_path  = pynbody_path , path_AHF_halonums = None)
+    return calculate_reffs_over_full_sim( DMOsim, data_particles_tagged, pynbody_path  = pynbody_path , path_AHF_halonums = None,from_file=from_file, from_dataframe = from_dataframe)
 
     
