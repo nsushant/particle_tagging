@@ -73,7 +73,7 @@ def tag_particles(DMO_database, path_to_particle_data = None, tagging_method = '
 
 
 
-def calculate_reffs_over_full_sim(DMOsim, particles_tagged,  pynbody_path  = None, path_AHF_halonums=None, from_file = False ,from_dataframe=False,save_to_file=True,AHF_centers_supplied=False,machine='astro',physics='edge1'):
+def calculate_reffs_over_full_sim(DMOsim, particles_tagged,  pynbody_path  = None, path_AHF_halonums=None, from_file = False ,from_dataframe=False,save_to_file=True,AHF_centers_supplied=False,machine='astro',physics='edge1',halo_number=0):
     #used paths
     
     AHF_halonums = None
@@ -130,7 +130,7 @@ def calculate_reffs_over_full_sim(DMOsim, particles_tagged,  pynbody_path  = Non
         print('--> DMO particle does not data exists, skipping!')
         exit()
                     
-    main_halo = DMOsim.timesteps[-1].halos[int(halo_number) - 1]
+    main_halo = DMOsim.timesteps[-1].halos[int(halo_number)]
     
     halonums = main_halo.calculate_for_progenitors('halo_number()')[0][::-1]
    
