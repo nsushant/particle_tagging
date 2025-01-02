@@ -311,8 +311,8 @@ def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_fi
             DMOname = 'Halo'+halonum+'_DMO_'+'Mreion'+simname[-3:]
 
         else:
-            DMOname = 'Halo'+halonum+'_DMO' + ('' if len(split)==2 else ('_' +  '_'.join(split[2:]))) #if split[1]=='fiducial' else None
-
+            #DMOname = 'Halo'+halonum+'_DMO' + ('' if len(split)==2 else ('_' +  '_'.join(split[2:]))) #if split[1]=='fiducial' else None
+            DMOname = simname
                         
         # set the correct paths to data files
         if machine=='astro':
