@@ -16,7 +16,7 @@ from particle_tagging.tagging.utils import *
 from particle_tagging.analysis.calculate import *
 import edge_tangos_properties as etp 
 
-mpl.rcParams.update({'text.usetex': False})
+#mpl.rcParams.update({'text.usetex': False})
 
 pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
 
@@ -98,11 +98,11 @@ def edge_plot_tagged_vs_hydro_mass_dist(name_of_DMO_simulation, name_of_HYDRO_si
 
     data_all_tagged = pd.DataFrame({ 'x':selected_parts['x'], 'y':selected_parts['y'], 'masses':np.asarray(selected_masses), 'lums':lums_particles}) #'Vmags':Vmags_particles})
     
-    sb_obs_units,r_sb_bins,sb = calc_sb(selected_parts, data_all_tagged['lums'].values, bin_type='lin',nbins=100,ndims=2)
+    sb_obs_units,r_sb_bins,sb = calc_sb(selected_parts, data_all_tagged['lums'].values, bin_type='log',nbins=50,ndims=2)
 
     print(data_all_tagged)
 
-    dataframe_for_hist = pd.DataFrame({'r':selected_parts['r'], 'masses': np.asarray(selected_masses),'lums':lums_particles })
+    dataframe_for_hist = pd.DataFrame({ 'x':selected_parts['x'], 'y':selected_parts['y'],'r':selected_parts['r'], 'masses': np.asarray(selected_masses),'lums':lums_particles })
     #, 'ages': np.asarray(ordered_ages)})
     
     dataframe_for_hist = dataframe_for_hist.sort_values(by=['r'])
@@ -155,9 +155,9 @@ def edge_plot_tagged_vs_hydro_mass_dist(name_of_DMO_simulation, name_of_HYDRO_si
     data_all_stars['lums'] = lum_st
     #data_all_stars['Vmags'] = mags_st
     
-    sb_hydro_obs_units,r_sb_bins_hydro,sb_hydro = calc_sb(stars, data_all_stars['lums'].values, bin_type='lin',nbins=100,ndims=2)
+    sb_hydro_obs_units,r_sb_bins_hydro,sb_hydro = calc_sb(stars, data_all_stars['lums'].values, bin_type='log',nbins=50,ndims=2)
     
-    lum_hist = pd.DataFrame({'r':stars['r'],'mass':stars['mass'],'lums':lum_st})
+    lum_hist = pd.DataFrame({'x':stars['x'],'y':stars['y'],'r':stars['r'],'mass':stars['mass'],'lums':lum_st})
 
     lum_hist = lum_hist.sort_values(by=['r'])
 
@@ -166,6 +166,14 @@ def edge_plot_tagged_vs_hydro_mass_dist(name_of_DMO_simulation, name_of_HYDRO_si
     lum_hist['mass_enc'] = np.cumsum(lum_hist['mass'].values)
     print(data_all_stars.head())
     
+
+
+    if plot_type == "return dataframe of luminosities":
+        
+        return dataframe_for_hist,lum_hist
+
+
+
     if plot_type == '2D Mass Distribution':
 
       plt.gca().set_box_aspect(1)
@@ -236,9 +244,9 @@ def edge_plot_tagged_vs_hydro_mass_dist(name_of_DMO_simulation, name_of_HYDRO_si
   
     if plot_type == '1D Mass Enclosed':
         
-        plt.plot(lum_hist['r'].values,lum_hist['mass_enc'].values,label='HYDRO')
+        plt.plot(lum_hist['r'].values,lum_hist['mass_enc'].values,c="k")
         #plt.plot(dataframe_for_hist['r'].values,dataframe_for_hist['m_enclosed'].values, label=label)
-        plt.plot(dataframe_for_hist['r'].values,dataframe_for_hist['m_enclosed'].values, label="Tagged")
+        plt.plot(dataframe_for_hist['r'].values,dataframe_for_hist['m_enclosed'].values, label=label)
         #plt.xlim(0,1)
         #plt.xlim(0.1,None)
         #plt.ylim(300,None)
@@ -287,10 +295,10 @@ def edge_plot_tagged_vs_hydro_mass_dist(name_of_DMO_simulation, name_of_HYDRO_si
         # so one pc = 2.06e4 arcsec
         arcsec_hydro = r_sb_bins_hydro * 2.06e4 
         arcsec_dmo = r_sb_bins * 2.06e4        
-        plt.plot(arcsec_dmo,sb_obs_units,label='Tagged')
-        plt.plot(arcsec_hydro,sb_hydro_obs_units,label='HYDRO')
+        plt.plot(r_sb_bins*(10**(-3)),sb_obs_units,label=label)
+        plt.plot(r_sb_bins_hydro*(10**(-3)),sb_hydro_obs_units,c="k",label="HYDRO")
 
-        plt.xlabel('Arcseconds')
+        plt.xlabel('Radius (kpc)')
         plt.ylabel('Surface Brightness $mag/arcsec^{2}$')        
 
     if plot_type == '1D Mass Distribution':
@@ -413,8 +421,9 @@ def edge_plot_tagged_vs_hydro_mass_dist(name_of_DMO_simulation, name_of_HYDRO_si
         
         plt.title(str(name_of_HYDRO_simulation))
                                              
-    
-    return 
+    if plot_type != "return dataframe of luminosities":
+        
+        return 
 
 
 def plot_tagged_vs_hydro_mass_dist(DMO_halo_particles, HYDRO_halo_particles, file_with_tagged_particles, time_to_plot, plot_type='2D Mass Distribution'):

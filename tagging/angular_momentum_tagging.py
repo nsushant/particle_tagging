@@ -293,7 +293,7 @@ def angmom_tag_over_full_sim(DMOsim, free_param_value = 0.01, pynbody_path  = No
                 # once the data from the snapshot has been loaded, .physical_units()
                 # converts all array’s units to be consistent with the distance, velocity, mass basis units specified.
                 DMOparticles.physical_units()
-                
+                DMOparticles = DMOparticles.d 
                 #print('total energy  ---------------------------------------------------->',DMOparticles['te'])
                 print('loaded data insitu')
             
@@ -319,7 +319,7 @@ def angmom_tag_over_full_sim(DMOsim, free_param_value = 0.01, pynbody_path  = No
             if type(AHF_centers_file) == type(None):
                 print(int(halonums[i])-1)
                 h = DMOparticles.halos()[int(halonums[i])-1]
-
+            
             elif type(AHF_centers_file) != type(None):
                 pynbody.config["halo-class-priority"] = [pynbody.halo.ahf.AHFCatalogue]
                 
@@ -340,8 +340,7 @@ def angmom_tag_over_full_sim(DMOsim, free_param_value = 0.01, pynbody_path  = No
                         subhalo_iords = np.append(subhalo_iords,halo_catalogue[int(ch)].dm['iord'])
                                                                                                                                         
                 h = h[np.logical_not(np.isin(h['iord'],subhalo_iords))] if len(subhalo_iords) >0 else h
-            
-                                                                                                                                                                         
+                
 
             pynbody.analysis.halo.center(h)
 
@@ -460,6 +459,7 @@ def angmom_tag_over_full_sim(DMOsim, free_param_value = 0.01, pynbody_path  = No
                     try:
                         DMOparticles = pynbody.load(simfn)
                         DMOparticles.physical_units()
+                        DMOparticles = DMOparticles.d
                         print('loaded data in mergers')
                     # where this data isn't available, notify the user.
                     except:
@@ -678,6 +678,9 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
         # if stellar mass is to be tagged then load in particle data 
     
         if mass_select>0:
+            if type(AHF_centers_filepath) != type(None):
+                # if AHF centers are available then the priority is changed to the AHF catalogue (Which is 1 indexed)
+                pynbody.config["halo-class-priority"] = [pynbody.halo.ahf.AHFCatalogue]
             
             decision=True
             
@@ -693,7 +696,7 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
                 # once the data from the snapshot has been loaded, .physical_units()
                 # converts all array’s units to be consistent with the distance, velocity, mass basis units specified.
                 DMOparticles.physical_units()
-                
+                #DMOparticles = DMOparticles.d 
                 print('loaded data insitu')
             
             # where this data isn't available, notify the user.
@@ -719,7 +722,7 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
                 
                 # if the AHF centers are unavailable, the default HOP catalogue is used (which is zero indexed)
                 h = DMOparticles.halos()[int(halonums[i])-1]
-                
+                h = h.dm
             
             elif type(AHF_centers_filepath) != type(None):
                 # if AHF centers are available then the priority is changed to the AHF catalogue (Which is 1 indexed)
@@ -728,7 +731,7 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
                 AHF_crossref = AHF_centers[AHF_centers['snapshot'] == outputs[i]]['AHF halonum'].values[0]
                 
                 h = DMOparticles.halos(halo_numbers="v1")[int(AHF_crossref)] 
-                
+                h = h.dm
                 # the "children" are subhalos that need to be removed before centering on the main halo
                 children_ahf_int = h.properties['children']
             
@@ -755,7 +758,8 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
                 continue                                                                                                                                                                                      
             
             DMOparticles_insitu_only = DMOparticles[sqrt(DMOparticles['pos'][:,0]**2 + DMOparticles['pos'][:,1]**2 + DMOparticles['pos'][:,2]**2) <= r200c_pyn ] #hDMO['r200c']]
-            
+        
+            DMOparticles_insitu_only = DMOparticles_insitu_only.dm
             #uncomment to remove subhalos from tagging insitu 
 
             ####DMOparticles_insitu_only = DMOparticles_insitu_only[np.logical_not(np.isin(DMOparticles_insitu_only['iord'],subhalo_iords))]
@@ -806,7 +810,7 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
                 #if (occupation_frac != 'all'):
                 try:
                     prob_occupied = calculate_poccupied(hDM,2.5e7)
-
+                    #prob_occupied = 1
                 except Exception as e:
                     print(e)
                     print("poccupied couldn't be calculated")
@@ -866,12 +870,21 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
                         continue
                     
                     simfn = join(pynbody_path, outputs[i])
-    
+                    
+                    #if type(AHF_centers_filepath) != type(None):
+                     #   pynbody.config["halo-class-priority"] = [pynbody.halo.ahf.AHFCatalogue]
+
+
                     if float(mass_select_merge) >0 and decision2==True:
                         # try to load in the data from this snapshot
+                        
+                        if type(AHF_centers_filepath) != type(None):
+                            pynbody.config["halo-class-priority"] = [pynbody.halo.ahf.AHFCatalogue]
+
                         try:
                             DMOparticles = pynbody.load(simfn)
                             DMOparticles.physical_units()
+                            #DMOparticles = DMOparticles.d
                             print('loaded data in mergers')
                         # where this data isn't available, notify the user.
                         except:
@@ -879,8 +892,8 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
                             continue
                         decision2 = False
                         decl=True
-                    if type(AHF_centers_filepath) != type(None):
-                        pynbody.config["halo-class-priority"] = [pynbody.halo.ahf.AHFCatalogue]
+                    #if type(AHF_centers_filepath) != type(None):
+                    #   pynbody.config["halo-class-priority"] = [pynbody.halo.ahf.AHFCatalogue]
                     
                     if int(mass_select_merge) > 0:
     
@@ -902,10 +915,11 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
                         #print('total energy  ---------------------------------------------------->',DMOparticles.loadable_keys())
                         print('sorting accreted particles by Angmom.')
                         #print(rank_order_particles_by_te(z_val, DMOparticles, hDM,'accreted'), 'output')
+        
                         DMOparticles_acc_only = DMOparticles[sqrt(DMOparticles['pos'][:,0]**2 + DMOparticles['pos'][:,1]**2 + DMOparticles['pos'][:,2]**2) <= r200c_pyn_acc] 
                                                     
                         try:
-                            accreted_particles_sorted_by_angmom = rank_order_particles_by_angmom(DMOparticles_acc_only, hDM)
+                            accreted_particles_sorted_by_angmom = rank_order_particles_by_angmom(DMOparticles_acc_only.dm, hDM)
                         except:
                             continue
                         

@@ -207,7 +207,7 @@ def calc_lum_hydro(ages_h,masses_h,metals_h):
 
     # Assumes stars have a metallicity of -2 (1/100 L_sun)
     metals = metals_h
-    ages_h = ages_h*(10**9)
+    ages_h = ages_h
     ## calculating v-band mags
 
     #lums_data = np.genfromtxt(pynbody.analysis.luminosity._default_ssp_file[0])
@@ -216,7 +216,8 @@ def calc_lum_hydro(ages_h,masses_h,metals_h):
     
     lums = get_current_ssp_table()
     
-    age_star = pynbody.array.SimArray(ages_h , units = 'yr')
+    age_star = ages_h 
+    #pynbody.array.SimArray(ages_h , units = 'yr')
     
     '''
     age_grid = lums['ages']*(10**(-9))
@@ -399,6 +400,61 @@ def calc_halflight(sim,lum_for_each_iord,band='v',cylindrical=False):
             min_low_r = test_r
     
     return test_r
+
+
+
+
+
+
+
+def calc_halflight_hydro(sim,lum_for_each_iord,band='v',cylindrical=False):
+
+    '''
+    Assumes ordering of ages_st is the same as sim_particles
+    '''
+
+    half_l = np.sum(lum_for_each_iord) * 0.5
+
+    if cylindrical:
+        coord = 'rxy'
+    else:
+        coord = 'r'
+
+    max_high_r = np.max(sim.st[coord])
+    test_r = 0.5 * max_high_r
+
+    testrf = f.LowPass(coord, test_r)
+    min_low_r = 0.0
+
+    #chosen_particle_ages = ages_st[np.isin(sim.dm['iord'],sim.dm[testrf]['iord'])]
+    #chosen_particle_masses = masses[np.isin(sim.dm['iord'],sim.dm[testrf]['iord'])]
+
+    test_l = np.sum(lum_for_each_iord[np.isin(sim.st['iord'],sim.st[testrf]['iord'])])
+
+    it = 0
+
+    while ((np.abs(test_l - half_l) / half_l) > 0.01):
+        it = it + 1
+        if (it > 20):
+            break
+
+        if (test_l > half_l):
+            test_r = 0.5 * (min_low_r + test_r)
+        else:
+            test_r = (test_r + max_high_r) * 0.5
+
+        testrf = f.LowPass(coord, test_r)
+        #chosen_particle_ages = ages_st[np.isin(sim.dm['iord'],sim.dm[testrf]['iord'])]
+        #chosen_particle_masses = masses[np.isin(sim.dm['iord'],sim.dm[testrf]['iord'])]
+        test_l = np.sum(lum_for_each_iord[np.isin(sim.st['iord'],sim.st[testrf]['iord'])])
+
+        if (test_l > half_l):
+            max_high_r = test_r
+        else:
+            min_low_r = test_r
+
+    return test_r
+
 
 
 def bootstrap_stat(data,stat_func,num_resamples=100):

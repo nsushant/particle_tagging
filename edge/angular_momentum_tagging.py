@@ -270,6 +270,7 @@ def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_fi
         AHF_halonums = pd.read_csv(path_AHF_halonums) 
 
         if len(AHF_halonums['snapshot']) > 0:
+            print("Using AHF catalogue======================================================")
             pynbody.config["halo-class-priority"] = [pynbody.halo.ahf.AHFCatalogue]            
 
         else:
@@ -412,7 +413,7 @@ def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_fi
             selected_iords_tot = data_grouped.index.values
 
             data_insitu = dt_all[dt_all['type'] == 'insitu'].groupby(['iords']).sum()
-            
+            #data_insitu = dt_all.groupby(['iords']).sum()
             selected_iords_insitu_only = data_insitu.index.values
             
             
@@ -440,11 +441,12 @@ def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_fi
             simfn = join(pynbody_path,DMOname,outputs[i])
             
             # try to load in the data from this snapshot
-            try:  DMOparticles = pynbody.load(simfn)
+            try:  
+                DMOparticles = pynbody.load(simfn)
 
             # where this data isn't available, notify the user.
-            except:
-                print('--> DMO particle data exists but failed to read it, skipping!')
+            except Exception as err_load:
+                print('--> DMO particle data exists but failed to read it, skipping!',err_load)
                 continue
             
             # once the data from the snapshot has been loaded, .physical_units()
@@ -453,19 +455,22 @@ def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_fi
 
             
             try:
-                if AHF_centers_supplied==False:
+                #if AHF_centers_supplied==False:
                     
-                    if type(AHF_halonums) != type(None):
-                        print('halonums cat', DMOparticles.halos(halo_numbers='v1'),DMOparticles.halos(halo_numbers='v1').keys())
-                        halonum_snap = AHF_halonums[AHF_halonums["snapshot"] == str(outputs[i])]["AHF halonum"].values
-                        
-                        h = DMOparticles.halos(halo_numbers='v1')[int(halonum_snap)]                        
-                        
-                    else:
-                        #pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
-                        h = DMOparticles.halos(halo_numbers='v1')[int(halonums[i])-1]
-    
+                if type(AHF_halonums) != type(None):
+                    pynbody.config["halo-class-priority"] = [pynbody.halo.ahf.AHFCatalogue]
+                    print('halonums cat', DMOparticles.halos(halo_numbers='v1'),DMOparticles.halos(halo_numbers='v1').keys())
+                    #pynbody.config["halo-class-priority"] = [pynbody.halo.ahf.AHFCatalogue]
 
+                    halonum_snap = AHF_halonums[AHF_halonums["snapshot"] == str(outputs[i])]["AHF halonum"].values
+                        
+                    h = DMOparticles.halos(halo_numbers='v1')[int(halonum_snap)]                        
+                        
+                else:
+                    #pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
+                    h = DMOparticles.halos(halo_numbers='v1')[int(halonums[i])-1]
+    
+                '''        
                 elif AHF_centers_supplied == True:
                     pynbody.config["halo-class-priority"] = [pynbody.halo.ahf.AHFCatalogue]
                     
@@ -489,13 +494,14 @@ def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_fi
                                 
                         subhalo_iords = np.append(subhalo_iords,halo_catalogue[int(i)].dm['iord'])
                                                                                                                                                  
-                    h = h[np.logical_not(np.isin(h['iord'],subhalo_iords))] if len(subhalo_iords) >0 else h
-                    
+                    h = h.dm[np.logical_not(np.isin(h.dm['iord'],subhalo_iords))] if len(subhalo_iords) >0 else h
+                ''' 
                 
-                children_dm,children_st,sub_halonums = get_child_iords(h,DMOparticles.halos(halo_numbers='v1'),DMO_state='DMO')
+                children_dm,children_st,sub_halonums = get_child_iords(h.dm,DMOparticles.halos(halo_numbers='v1'),DMO_state='DMO')
                 
                 DMOparticles.physical_units()    
-                pynbody.analysis.halo.center(h)
+                pynbody.analysis.halo.center(h.dm)
+                pynbody.analysis.angmom.faceon(h.dm)
 
             except Exception as e:
                 print('centering data unavailable',e)
@@ -513,12 +519,15 @@ def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_fi
 
             DMOparticles = DMOparticles[sqrt(DMOparticles['pos'][:,0]**2 + DMOparticles['pos'][:,1]**2 + DMOparticles['pos'][:,2]**2) <= r200c_pyn ]        
             
-            DMOparticles = DMOparticles[np.logical_not(np.isin(DMOparticles['iord'],children_dm))]
+            DMOparticles_only_insitu = DMOparticles.dm[np.logical_not(np.isin(DMOparticles.dm['iord'],children_dm))]
 
-            particle_selection_reff_tot = DMOparticles[np.isin(DMOparticles['iord'],selected_iords_tot)] if len(selected_iords_tot)>0 else []
+            particle_selection_reff_tot = DMOparticles.dm[np.isin(DMOparticles.dm['iord'],selected_iords_tot)] if len(selected_iords_tot)>0 else []
+
+            print("length of particle_selection_reff_tot:",len(particle_selection_reff_tot))
             
-            particles_only_insitu = DMOparticles[np.isin(DMOparticles['iord'],selected_iords_insitu_only)] if len(selected_iords_insitu_only) > 0 else []
+            particles_only_insitu = DMOparticles_only_insitu[np.isin(DMOparticles_only_insitu['iord'],selected_iords_insitu_only)] if len(DMOparticles_only_insitu) > 0 else []
             
+            #print("length of particles_only_insitu",particles_only_insitu)
 
             #print('m200 value---->',hDMO['M200c'])
             
@@ -530,14 +539,17 @@ def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_fi
         
                 masses = [ data_grouped.loc[n]['mstar'] for n in particle_selection_reff_tot['iord']]
 
-                masses_insitu = [data_insitu.loc[iord]['mstar'] for iord in particles_only_insitu['iord']]
+                masses_insitu = [data_grouped.loc[iord]['mstar'] for iord in particles_only_insitu['iord']]
                     
-                cen_stars = calc_3D_cm(particles_only_insitu,masses_insitu)
+                #cen_stars = calc_3D_cm(particles_only_insitu,masses_insitu)
                 
-                particle_selection_reff_tot['pos'] -= cen_stars
+                if len(particles_only_insitu) != 0:
+                    cen_stars = calc_3D_cm(particles_only_insitu,masses_insitu)
+                    particle_selection_reff_tot['pos'] -= cen_stars
                 
+
                 # new cutoff calc begins 
-                distances = np.sqrt(particle_selection_reff_tot['x']**2+particle_selection_reff_tot['y']**2) #+ particle_selection_reff_tot['z']**2)                
+                distances = np.sqrt(particle_selection_reff_tot['x']**2+particle_selection_reff_tot['y']**2 + particle_selection_reff_tot['z']**2)                
                             
                 idxs_distances_sorted = np.argsort(distances)
 
@@ -566,8 +578,9 @@ def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_fi
                 stored_reff = np.append(stored_reff,float(R_half))
                 kravtsov = hDMO['r200c']*0.02
                 kravtsov_r = np.append(kravtsov_r,kravtsov)
-
-                particle_selection_reff_tot['pos'] += cen_stars
+                
+                if len(particles_only_insitu) != 0:
+                    particle_selection_reff_tot['pos'] += cen_stars
 
                 print('halfmass radius:',R_half)
                 print('Kravtsov_radius:',kravtsov)
