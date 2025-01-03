@@ -467,8 +467,9 @@ def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_fi
                     h = DMOparticles.halos(halo_numbers='v1')[int(halonum_snap)]                        
                         
                 else:
-                    #pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
-                    h = DMOparticles.halos(halo_numbers='v1')[int(halonums[i])-1]
+                    print("confirmed switch to HOP")
+                    pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
+                    h = DMOparticles.halos()[int(halonums[i])-1]
     
                 '''        
                 elif AHF_centers_supplied == True:
