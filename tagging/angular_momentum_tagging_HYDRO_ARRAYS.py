@@ -631,7 +631,15 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
                                     
     # Get stellar masses at each redshift using darklight for insitu tagging (mergers = False, excludes accreted mass)
 
-    t,redshift,vsmooth,sfh_insitu,mstar_s_insitu,mstar_total = DarkLight(main_halo,nscatter=0,vthres=26.3,zre=4.,pre_method='fiducial',post_method='schechter',post_scatter_method='increasing',binning='3bins',timesteps='sim',mergers=False,DMO=True,occupation=2.5e7,fn_vmax=None)
+    t = main_halo.calculate_for_progenitors('t()')[0][::-1]
+
+    redshift = main_halo.calculate_for_progenitors('z()')[0][::-1]
+
+    mstar_s_insitu = main_halo.calculate_for_progenitors("M200c_stars")[0][::-1]
+
+    mstar_total = mstar_s_insitu 
+
+    #t,redshift,vsmooth,sfh_insitu,mstar_s_insitu,mstar_total = DarkLight(main_halo,nscatter=0,vthres=26.3,zre=4.,pre_method='fiducial',post_method='schechter',post_scatter_method='increasing',binning='3bins',timesteps='sim',mergers=False,DMO=True,occupation=2.5e7,fn_vmax=None)
 
     # calculate when the mergers took place and grab all the tangos halo objects involved in the merger (zmerge = merger redshift, hmerge = merging halo objects,qmerge = merger ratio)
     # these are based on the HOP catalogue by default 
@@ -873,7 +881,12 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
                     print('Skipped')
                     continue
                 try:
-                    t_2,redshift_2,vsmooth_2,sfh_in2,mstar_in2,mstar_merging = DarkLight(hDM,nscatter=0,vthres=26.3,zre=4.,pre_method='fiducial',post_method='schechter',post_scatter_method='increasing',binning='3bins',timesteps='sim',mergers=True,DMO=True,occupation=2.5e7,fn_vmax=None)
+                    t_2= hDM.calculate_for_progenitors("t()")[0][::-1]
+                    redshift_2= hDM.calculate_for_progenitors("z()")[0][::-1]
+                    mstar_in2 = hDM.calculate_for_progenitors("M200c_stars")[0][::-1]
+                    mstar_merging = mstar_in2
+
+                    ##t_2,redshift_2,vsmooth_2,sfh_in2,mstar_in2,mstar_merging = DarkLight(hDM,nscatter=0,vthres=26.3,zre=4.,pre_method='fiducial',post_method='schechter',post_scatter_method='increasing',binning='3bins',timesteps='sim',mergers=True,DMO=True,occupation=2.5e7,fn_vmax=None)
 
                     #occupation=occupation_frac, pre_method='fiducial_with_turnover', post_scatter_method='flat',DMO=True,mergers = True)
                     #occupation=2.5e7, pre_method='fiducial',post_method='fiducial',post_scatter_method='flat', DMO=True, mergers=True)
