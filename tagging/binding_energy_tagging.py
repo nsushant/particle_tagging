@@ -81,7 +81,7 @@ def rank_order_particles_by_BE(particles, halo, path_to_pe_file = None):
 
 
 
-def assign_stars_to_particles(snapshot_stellar_mass, particles_sorted_by_BE, tagging_fraction, selected_particles = [np.array([]),np.array([])],  =0):
+def assign_stars_to_particles(snapshot_stellar_mass, particles_sorted_by_BE, tagging_fraction, selected_particles = [np.array([]),np.array([])]):
     
     '''
 
@@ -106,16 +106,16 @@ def assign_stars_to_particles(snapshot_stellar_mass, particles_sorted_by_BE, tag
    
     '''
 
-    # define size of ftag 
+    # define size of ftag and select particles to tag 
     size_of_tagging_fraction = int(particles_sorted_by_BE.shape[0]*tagging_fraction)
     
     particles_in_tagging_fraction = particles_sorted_by_BE[:size_of_tagging_fraction]
     
     #dividing stellar mass evenly over all the particles in the most bound fraction 
-
-    print('assigning stellar mass')
     
     stellar_mass_assigned = float(snapshot_stellar_mass/len(list(particles_in_tagging_fraction))) if len(list(particles_in_tagging_fraction))>0 else 0
+    print("total stellar mass growth in this snap: ", snapshot_stellar_mass)
+    print("stellar mass assigned per particle: ",  stellar_mass_assigned)
     
     #check if particles have been selected before 
     
@@ -136,11 +136,11 @@ def assign_stars_to_particles(snapshot_stellar_mass, particles_sorted_by_BE, tag
     
     selected_particles = np.array([selected_particles_new_iords,selected_particles_new_masses])
 
-    array_iords = np.append(selected_particles[0][idxs_previously_selected], particles_in_tagging_fraction[idxs_not_previously_selected])
-
+    array_iords = particles_in_tagging_fraction
+    
     #Uncomment this for old behaviour
     #array_masses = np.append(selected_particles[1][idxs_previously_selected],np.repeat(stellar_mass_assigned,how_many_not_previously_selected))
-    array_masses = np.repeat(stellar_mass_assigned,len(array_iords))
+    array_masses = np.repeat(stellar_mass_assigned,len(particles_in_tagging_fraction))
  
     updates_to_arrays = np.array([array_iords,array_masses])
     
@@ -239,7 +239,6 @@ def BE_tag_over_full_sim(DMOsim, free_param_value = 0.01, PE_file=None,pynbody_p
     ##################################################### SECOND LOOP ###############################################################
     
     selected_particles = np.array([[np.nan],[np.nan]])
-    mstars_total_darklight_l = [] 
     
     # number of stars left over after selection (per iteration)
     leftover=0
@@ -647,8 +646,6 @@ def BE_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_value = 
 
     if type(selected_particles) == type(None):
         selected_particles = np.array([[np.nan],[np.nan]])
-
-    mstars_total_darklight_l = [] 
     
     # number of stars left over after selection (per iteration)
     leftover=0
@@ -829,7 +826,7 @@ def BE_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_value = 
                 print("No sorted particles")
                 continue
             
-            selected_particles,array_to_write = assign_stars_to_particles(mass_select,particles_sorted_by_BE,float(free_param_value),selected_particles = selected_particles,total_stellar_mass = mstar_s_insitu[-1])
+            selected_particles,array_to_write = assign_stars_to_particles(mass_select,particles_sorted_by_BE,float(free_param_value),selected_particles = selected_particles)
             
             
             print('writing '+str(tag_typ)+' particles to output file')
@@ -969,7 +966,7 @@ def BE_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_value = 
             
                         print('assinging stars to accreted particles')
     
-                        selected_particles,array_to_write_accreted = assign_stars_to_particles(mass_select_merge,accreted_particles_sorted_by_BE,float(free_param_value),selected_particles = selected_particles,total_stellar_mass = mass_select_merge)
+                        selected_particles,array_to_write_accreted = assign_stars_to_particles(mass_select_merge,accreted_particles_sorted_by_BE,float(free_param_value),selected_particles = selected_particles)
                         
     
                         tagged_iords_to_write = np.append(tagged_iords_to_write,array_to_write_accreted[0])
