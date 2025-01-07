@@ -3,6 +3,9 @@
 
 <img width="1183" alt="image" src="https://github.com/nsushant/particle_tagging_package/assets/64201587/9cd0684d-7a8f-4015-b329-4456a1f3c27b">
 
+Figure 1.  White circle shows the calculated halflight radius. Blue circle shows the virial radius of the dark matter halo and contours show the stellar mass distribution created by particle tagging. 
+
+
 This is a particle tagging package that assigns stellar mass to particles in dark matter only simulations. The primary aim of the project is to accurately reproduce the sizes and stellar mass distributions of dwarf galaxies. 
 Two new tagging methods have been developed and tested angainst the generally used binding energy approach. 
 
