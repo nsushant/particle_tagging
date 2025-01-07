@@ -32,48 +32,46 @@ def rank_order_particles_by_BE(particles, halo, path_to_pe_file = None):
     '''
     Inputs: 
 
-    DMOparticles - Particle data (angular momenta and positions) 
-    hDMO - Tangos halo object for the main halo
-    
+    particles - Particle data (binding energies and positions) 
+    halo - Tangos halo object for the main halo
     
     Returns: 
-    c
-    a list of particle IDs ordered by their corresponding angular momenta.
+    a list of particle IDs ordered by their binding energies (highest to lowest).
     
     '''
     
     
-    # fetch particles insode the R200
-    particles_inside_r200 = particles[sqrt(particles['pos'][:,0]**2 + particles['pos'][:,1]**2 + particles['pos'][:,2]**2) <= halo['r200c']]
+    # fetch particles inside the R200 (here we use the r200 stored in the supplied tangos database)
+    particles_inside_r200 = particles[ sqrt( particles['pos'][:,0]**2 + particles['pos'][:,1]**2 + particles['pos'][:,2]**2) <= halo['r200c']]
     
-    # if there are no stored values of the potential, calculate it using pynbody 
-    #if type(path_to_pe_file)==type(None):
+    # softening length array needs to have the same shape as particles_inside_r200  
     softening_length = pynbody.array.SimArray(np.ones(len(particles_inside_r200))*10.0, units='pc', sim=None)
+        
+    '''
+    # This part of the function is only to be uncommented if potentials are to be read in from a file (rather than being calculated directly)
+
+    # pe_file contains cols : iord, potential. A separate file is assumed to exist for each output. 
+    print('Reading in potential from ',path_to_pe_file)
+        
+    potentials_df = pd.read_csv(path_to_pe_file)
+        
+    calculated_potentials = potentials_df[ np.isin(potentials_df['iord'],particles_inside_r200['iord'])]
+    
+    calculated_potentials = calculated_potentials.set_index(['iord']).loc[particles_inside_r200['iord']]
+    calculated_potentials = calculated_potentials['potential'].values
+
+    pe = pynbody.array.SimArray(calculated_potentials,units='G Msol kpc**-1',sim=None)
+    
+    '''
 
     calculated_potentials, calculated_force = pynbody.gravity.direct(particles_inside_r200,np.asarray(particles_inside_r200['pos']),eps=softening_length)
-        
-    '''
-    # if available, read in the potential energies for particles inside the r200
-    # pe_file contains cols : iord, potential. A separate file is assumed to exist for each output. 
-    else: 
-        print('Reading in potential from ',path_to_pe_file)
-        
-        potentials_df = pd.read_csv(path_to_pe_file)
-        
-        calculated_potentials = potentials_df[ np.isin(potentials_df['iord'],particles_inside_r200['iord'])]
-        
-        calculated_potentials = calculated_potentials.set_index(['iord']).loc[particles_inside_r200['iord']]
-        calculated_potentials = calculated_potentials['potential'].values
-
-        pe = pynbody.array.SimArray(calculated_potentials,units='G Msol kpc**-1',sim=None)
-    
-    '''
 
     kinetic_energies = particles_inside_r200['ke']
 
+    # the in_units conversion here ensures that the potential and kinetic energies are in the same units 
     total_energy = np.asarray(calculated_potentials.in_units(kinetic_energies.units)) + np.asarray(kinetic_energies)
 
-    #values arranged in ascending order
+    # value indicies sorted in ascending order (because we have negative energies, from most to least bound)
     sorted_indicies = np.argsort(total_energy.flatten())
 
     particles_ordered_by_BE = np.asarray(particles_inside_r200['iord'])[sorted_indicies] if sorted_indicies.shape[0] != 0 else np.array([]) 
@@ -83,7 +81,7 @@ def rank_order_particles_by_BE(particles, halo, path_to_pe_file = None):
 
 
 
-def assign_stars_to_particles(snapshot_stellar_mass,particles_sorted_by_BE,tagging_fraction,selected_particles = [np.array([]),np.array([])], total_stellar_mass=0):
+def assign_stars_to_particles(snapshot_stellar_mass, particles_sorted_by_BE, tagging_fraction, selected_particles = [np.array([]),np.array([])],  =0):
     
     '''
 
