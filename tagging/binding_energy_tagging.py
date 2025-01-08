@@ -27,13 +27,12 @@ import pynbody
 from .utils import *
 
 
-def rank_order_particles_by_BE(particles, halo, path_to_pe_file = None):
+def rank_order_particles_by_BE(particles, path_to_pe_file = None):
     
     '''
     Inputs: 
 
     particles - Particle data (binding energies and positions) 
-    halo - Tangos halo object for the main halo
     
     Returns: 
     a list of particle IDs ordered by their binding energies (highest to lowest).
@@ -42,7 +41,7 @@ def rank_order_particles_by_BE(particles, halo, path_to_pe_file = None):
     
     
     # fetch particles inside the R200 (here we use the r200 stored in the supplied tangos database)
-    particles_inside_r200 = particles[ sqrt( particles['pos'][:,0]**2 + particles['pos'][:,1]**2 + particles['pos'][:,2]**2) <= halo['r200c']]
+    #particles_inside_r200 = particles[ sqrt( particles['pos'][:,0]**2 + particles['pos'][:,1]**2 + particles['pos'][:,2]**2) <= halo['r200c']]
     
     # softening length array needs to have the same shape as particles_inside_r200  
     softening_length = pynbody.array.SimArray(np.ones(len(particles_inside_r200))*10.0, units='pc', sim=None)
@@ -64,9 +63,9 @@ def rank_order_particles_by_BE(particles, halo, path_to_pe_file = None):
     
     '''
 
-    calculated_potentials, calculated_force = pynbody.gravity.direct(particles_inside_r200,np.asarray(particles_inside_r200['pos']),eps=softening_length)
+    calculated_potentials, calculated_force = pynbody.gravity.direct(particles,np.asarray(particles['pos']),eps=softening_length)
 
-    kinetic_energies = particles_inside_r200['ke']
+    kinetic_energies = particles['ke']
 
     # the in_units conversion here ensures that the potential and kinetic energies are in the same units 
     total_energy = np.asarray(calculated_potentials.in_units(kinetic_energies.units)) + np.asarray(kinetic_energies)
@@ -74,7 +73,7 @@ def rank_order_particles_by_BE(particles, halo, path_to_pe_file = None):
     # value indicies sorted in ascending order (because we have negative energies, from most to least bound)
     sorted_indicies = np.argsort(total_energy.flatten())
 
-    particles_ordered_by_BE = np.asarray(particles_inside_r200['iord'])[sorted_indicies] if sorted_indicies.shape[0] != 0 else np.array([]) 
+    particles_ordered_by_BE = np.asarray(particles['iord'])[sorted_indicies] if sorted_indicies.shape[0] != 0 else np.array([]) 
    
     return np.asarray(particles_ordered_by_BE)
 
@@ -416,7 +415,7 @@ def BE_tag_over_full_sim(DMOsim, free_param_value = 0.01, PE_file=None,pynbody_p
             '''
 
 
-            particles_sorted_by_BE = rank_order_particles_by_BE( DMOparticles_insitu_only, hDMO)
+            particles_sorted_by_BE = rank_order_particles_by_BE(DMOparticles_insitu_only)
 
             if particles_sorted_by_BE.shape[0] == 0:
                 print("NO PARTICLES IN THE SORTED BY BE ARRAY")
@@ -539,7 +538,7 @@ def BE_tag_over_full_sim(DMOsim, free_param_value = 0.01, PE_file=None,pynbody_p
                     #DMOparticles_acc_only = DMOparticles[np.logical_not(np.isin(DMOparticles['iord'],insitu_only_particle_ids))]
                                             
                     try:
-                        accreted_particles_sorted_by_BE = rank_order_particles_by_BE(DMOparticles_acc_only, hDM)
+                        accreted_particles_sorted_by_BE = rank_order_particles_by_BE(DMOparticles_acc_only)
                     except Exception as esort:
                         print(esort)
                         continue
@@ -820,7 +819,7 @@ def BE_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_value = 
             
             #DMOparticles_insitu_only = DMOparticles_insitu_only[np.logical_not(np.isin(DMOparticles_insitu_only['iord'],subhalo_iords))]
             
-            particles_sorted_by_BE = rank_order_particles_by_BE( DMOparticles_insitu_only, hDMO,path_to_pe_file=path_to_pe_file)
+            particles_sorted_by_BE = rank_order_particles_by_BE( DMOparticles_insitu_only)
             
             if particles_sorted_by_BE.shape[0] == 0:
                 print("No sorted particles")
@@ -959,7 +958,7 @@ def BE_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_value = 
                         #DMOparticles_acc_only = DMOparticles[np.logical_not(np.isin(DMOparticles['iord'],selected_particles[0]))]
                                                 
                         try:
-                            accreted_particles_sorted_by_BE = rank_order_particles_by_BE(DMOparticles_acc_only, hDM)
+                            accreted_particles_sorted_by_BE = rank_order_particles_by_BE(DMOparticles_acc_only)
                         except:
                             continue
                         
