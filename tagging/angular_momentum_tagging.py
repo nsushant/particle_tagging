@@ -26,7 +26,7 @@ import random
 import pynbody
 from .utils import *
 
-def rank_order_particles_by_angmom(DMOparticles, hDMO):
+def rank_order_particles_by_angmom(particles):
     
     '''
     Inputs: 
@@ -41,20 +41,19 @@ def rank_order_particles_by_angmom(DMOparticles, hDMO):
     
     '''
     
-    print('this is how many DMOparticles were passed',len(DMOparticles))
+    print('this is how many DMOparticles were passed',len(particles))
     
-    print('r200',hDMO['r200c'])
 
-    particles_in_r200 = DMOparticles[sqrt(DMOparticles['pos'][:,0]**2 + DMOparticles['pos'][:,1]**2 + DMOparticles['pos'][:,2]**2) <= hDMO['r200c']]
+    #particles_in_r200 = DMOparticles[sqrt(DMOparticles['pos'][:,0]**2 + DMOparticles['pos'][:,1]**2 + DMOparticles['pos'][:,2]**2) <= hDMO['r200c']]
     
-    softening_length = pynbody.array.SimArray(np.ones(len(particles_in_r200))*10.0, units='pc', sim=None)
+    softening_length = pynbody.array.SimArray(np.ones(len(particles))*10.0, units='pc', sim=None)
     
-    angular_momenta = get_dist(particles_in_r200['j'])
+    angular_momenta = get_dist(particles['j'])
 
     #values arranged in ascending order
     sorted_indicies = np.argsort(angular_momenta.flatten())
 
-    particles_ordered_by_angmom = np.asarray(particles_in_r200['iord'])[sorted_indicies] if sorted_indicies.shape[0] != 0 else np.array([]) 
+    particles_ordered_by_angmom = np.asarray(particles['iord'])[sorted_indicies] if sorted_indicies.shape[0] != 0 else np.array([]) 
    
     return np.asarray(particles_ordered_by_angmom)
 
@@ -115,7 +114,7 @@ def assign_stars_to_particles(snapshot_stellar_mass,particles_sorted_by_angmom,t
     
     selected_particles = np.array([selected_particles_new_iords,selected_particles_new_masses])
 
-    array_iords = np.append(selected_particles[0][idxs_previously_selected], particles_in_tagging_fraction[idxs_not_previously_selected])
+    array_iords = particles_in_tagging_fraction
 
     #Uncomment this for old behaviour (where the mass per particle is the total mass tagged upto that point)
     #array_masses = np.append(selected_particles[1][idxs_previously_selected],np.repeat(stellar_mass_assigned,how_many_not_previously_selected))
@@ -364,7 +363,7 @@ def angmom_tag_over_full_sim(DMOsim, free_param_value = 0.01, pynbody_path  = No
             #DMOparticles_insitu_only = DMOparticles[np.logical_not(np.isin(DMOparticles['iord'],accreted_only_particle_ids))]
 
             #DMOparticles_insitu_only = DMOparticles_insitu_only[np.logical_not(np.isin(DMOparticles_insitu_only['iord'],selected_particles[0]))]
-            particles_sorted_by_angmom = rank_order_particles_by_angmom( DMOparticles_insitu_only, hDMO)
+            particles_sorted_by_angmom = rank_order_particles_by_angmom( DMOparticles_insitu_only)
             
             if particles_sorted_by_angmom.shape[0] == 0:
                 continue
@@ -489,7 +488,7 @@ def angmom_tag_over_full_sim(DMOsim, free_param_value = 0.01, pynbody_path  = No
                     #DMOparticles_acc_only = DMOparticles[np.logical_not(np.isin(DMOparticles['iord'],insitu_only_particle_ids))]
                                             
                     try:
-                        accreted_particles_sorted_by_angmom = rank_order_particles_by_angmom(DMOparticles_acc_only, hDM)
+                        accreted_particles_sorted_by_angmom = rank_order_particles_by_angmom(DMOparticles_acc_only)
                     except:
                         continue
                     
@@ -764,7 +763,7 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
 
             ####DMOparticles_insitu_only = DMOparticles_insitu_only[np.logical_not(np.isin(DMOparticles_insitu_only['iord'],subhalo_iords))]
             
-            particles_sorted_by_angmom = rank_order_particles_by_angmom( DMOparticles_insitu_only, hDMO)
+            particles_sorted_by_angmom = rank_order_particles_by_angmom( DMOparticles_insitu_only)
             
             if particles_sorted_by_angmom.shape[0] == 0:
                 continue
@@ -919,7 +918,7 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
                         DMOparticles_acc_only = DMOparticles[sqrt(DMOparticles['pos'][:,0]**2 + DMOparticles['pos'][:,1]**2 + DMOparticles['pos'][:,2]**2) <= r200c_pyn_acc] 
                                                     
                         try:
-                            accreted_particles_sorted_by_angmom = rank_order_particles_by_angmom(DMOparticles_acc_only.dm, hDM)
+                            accreted_particles_sorted_by_angmom = rank_order_particles_by_angmom(DMOparticles_acc_only.dm)
                         except:
                             continue
                         
