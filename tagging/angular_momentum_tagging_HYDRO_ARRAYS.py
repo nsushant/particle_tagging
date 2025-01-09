@@ -223,11 +223,11 @@ def angmom_tag_over_full_sim(DMOsim, HYDROsim, free_param_value = 0.01, pynbody_
     print("Lengths of time arrays: ",len(t_all),len(t))
     print("Length of MSTAR array: ",len(mstar_s_insitu))
 
-
+    '''
     if len(outputs) != len(mstar_s_insitu):
         
         mstar_s_insitu = np.pad(mstar_s_insitu,(len(outputs)-len(mstar_s_insitu),0))
-
+    '''
     
     print("Length of Corrected MSTAR array: ",len(mstar_s_insitu))
 
@@ -659,10 +659,13 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
     # check time and output array have same size 
     if ( len(red_all) != len(outputs) ) : 
         print('output array length does not match redshift and time arrays')
-        
+    
+    '''
+    # Uncomment if using hydro mstars 
+    
     if len(outputs) != len(mstar_s_insitu):
         mstar_s_insitu = np.pad(mstar_s_insitu,(len(outputs)-len(mstar_s_insitu),0))
-
+    '''
 
     # group_mergers groups all merging halo objects by redshift.
     hmerge_added, z_set_vals = group_mergers(zmerge,hmerge)
