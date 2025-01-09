@@ -202,7 +202,8 @@ def angmom_tag_over_full_sim(DMOsim, HYDROsim, free_param_value = 0.01, pynbody_
     #t_all, red_all, main_halo,halonums,outputs = load_indexing_data(DMOsim,1)
     
     # Get stellar masses at each redshift using darklight for insitu tagging (mergers = False excludes accreted mass)
-    
+    '''
+    # Uncomment to use hydro Mstars 
     hydrohalo = HYDROsim.timesteps[-1].halos[0]
 
     t = hydrohalo.calculate_for_progenitors('t()')[0][::-1]
@@ -212,8 +213,12 @@ def angmom_tag_over_full_sim(DMOsim, HYDROsim, free_param_value = 0.01, pynbody_
     mstar_s_insitu = hydrohalo.calculate_for_progenitors("M200c_stars")[0][::-1]
 
     mstar_total = mstar_s_insitu 
+    '''
 
 
+    t,redshift,vsmooth,sfh_insitu,mstar_s_insitu,mstar_total =DarkLight(main_halo,nscatter=0,vthres=26.3,zre=4.,pre_method='fiducial',post_method='schechter',post_scatter_method='increasing',binning='3bins',timesteps='sim',mergers=True,DMO=False,occupation=2.5e7,fn_vmax=None)
+
+    
     print("Length of output array : ",len(outputs))
     print("Lengths of time arrays: ",len(t_all),len(t))
     print("Length of MSTAR array: ",len(mstar_s_insitu))
@@ -472,14 +477,17 @@ def angmom_tag_over_full_sim(DMOsim, HYDROsim, free_param_value = 0.01, pynbody_
                 
                 try:
 
+                    '''
+                    #Uncomment to use hydro mstars 
+                    
                     t_2= hDM.calculate_for_progenitors("t()")[0][::-1]
                     redshift_2= hDM.calculate_for_progenitors("z()")[0][::-1]
                     mstar_in2 = hDM.calculate_for_progenitors("M200c_stars")[0][::-1]
                     mstar_merging = mstar_in2
+                    '''
 
 
-
-                    #t_2,redshift_2,vsmooth_2,sfh_in2,mstar_in2,mstar_merging = DarkLight(hDM,nscatter=0,vthres=26.3,zre=4.,pre_method='fiducial',post_method='schechter',post_scatter_method='increasing',binning='3bins',timesteps='sim',mergers=True,DMO=False,occupation=2.5e7,fn_vmax=None)
+                    t_2,redshift_2,vsmooth_2,sfh_in2,mstar_in2,mstar_merging = DarkLight(hDM,nscatter=0,vthres=26.3,zre=4.,pre_method='fiducial',post_method='schechter',post_scatter_method='increasing',binning='3bins',timesteps='sim',mergers=True,DMO=False,occupation=2.5e7,fn_vmax=None)
 
                     #occupation='edge1', pre_method='fiducial_with_turnover', post_scatter_method='flat', DMO=True,mergers = True)
                     #DarkLight(hDM,DMO=True)#,poccupied=occupation_frac,mergers=True)
@@ -630,7 +638,9 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
     outputs.sort()
                                     
     # Get stellar masses at each redshift using darklight for insitu tagging (mergers = False, excludes accreted mass)
-
+    '''
+    # Uncomment to use HYDRO Mstars 
+    
     t = main_halo.calculate_for_progenitors('t()')[0][::-1]
 
     redshift = main_halo.calculate_for_progenitors('z()')[0][::-1]
@@ -638,8 +648,8 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
     mstar_s_insitu = main_halo.calculate_for_progenitors("M200c_stars")[0][::-1]
 
     mstar_total = mstar_s_insitu 
-
-    #t,redshift,vsmooth,sfh_insitu,mstar_s_insitu,mstar_total = DarkLight(main_halo,nscatter=0,vthres=26.3,zre=4.,pre_method='fiducial',post_method='schechter',post_scatter_method='increasing',binning='3bins',timesteps='sim',mergers=False,DMO=True,occupation=2.5e7,fn_vmax=None)
+    '''
+    t,redshift,vsmooth,sfh_insitu,mstar_s_insitu,mstar_total = DarkLight(main_halo,nscatter=0,vthres=26.3,zre=4.,pre_method='fiducial',post_method='schechter',post_scatter_method='increasing',binning='3bins',timesteps='sim',mergers=False,DMO=False,occupation=2.5e7,fn_vmax=None)
 
     # calculate when the mergers took place and grab all the tangos halo objects involved in the merger (zmerge = merger redshift, hmerge = merging halo objects,qmerge = merger ratio)
     # these are based on the HOP catalogue by default 
@@ -885,12 +895,17 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
                     print('Skipped')
                     continue
                 try:
+
+                    '''
+                    # Uncomment to use HYDRO Mstars
+                    
                     t_2= hDM.calculate_for_progenitors("t()")[0][::-1]
                     redshift_2= hDM.calculate_for_progenitors("z()")[0][::-1]
                     mstar_in2 = hDM.calculate_for_progenitors("M200c_stars")[0][::-1]
                     mstar_merging = mstar_in2
-
-                    ##t_2,redshift_2,vsmooth_2,sfh_in2,mstar_in2,mstar_merging = DarkLight(hDM,nscatter=0,vthres=26.3,zre=4.,pre_method='fiducial',post_method='schechter',post_scatter_method='increasing',binning='3bins',timesteps='sim',mergers=True,DMO=True,occupation=2.5e7,fn_vmax=None)
+                    '''
+                    
+                    t_2,redshift_2,vsmooth_2,sfh_in2,mstar_in2,mstar_merging = DarkLight(hDM,nscatter=0,vthres=26.3,zre=4.,pre_method='fiducial',post_method='schechter',post_scatter_method='increasing',binning='3bins',timesteps='sim',mergers=True,DMO=False,occupation=2.5e7,fn_vmax=None)
 
                     #occupation=occupation_frac, pre_method='fiducial_with_turnover', post_scatter_method='flat',DMO=True,mergers = True)
                     #occupation=2.5e7, pre_method='fiducial',post_method='fiducial',post_scatter_method='flat', DMO=True, mergers=True)
