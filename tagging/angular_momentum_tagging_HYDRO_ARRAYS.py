@@ -293,10 +293,10 @@ def angmom_tag_over_full_sim(DMOsim, HYDROsim, free_param_value = 0.01, pynbody_
 
         # 't' is the darklight time array 
         # idrz is thus the index of the mstar value calculated at the closest time to that of the snap
-        idrz = np.where(t==t_val)[0][0]
+        idrz = np.argmin(abs(t - t_val))
 
         # index of previous snap's mstar value in darklight array
-        idrz_previous = np.where(t == t_all[i-1])[0][0] if idrz>0 else None 
+        idrz_previous = np.argmin(abs(t - t_all[i-1])) if idrz>0 else None 
 
         # current snap's darklight calculated stellar mass 
         msn = mstar_s_insitu[idrz]              
