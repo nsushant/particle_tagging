@@ -157,7 +157,7 @@ def tag(DMOparticles, hDMO, snapshot_stellar_mass,free_param_value = 0.01, previ
     
 
 
-def angmom_tag_over_full_sim(DMOsim, free_param_value = 0.01, pynbody_path  = None, occupation_frac = 'all' ,particle_storage_filename=None, AHF_centers_file=None, mergers = True):
+def angmom_tag_over_full_sim(DMOsim, halonumber = 0 ,free_param_value = 0.01, pynbody_path  = None, occupation_frac = 'all' ,particle_storage_filename=None, AHF_centers_file=None, mergers = True):
 
     '''
 
@@ -177,15 +177,27 @@ def angmom_tag_over_full_sim(DMOsim, free_param_value = 0.01, pynbody_path  = No
     
     '''
     
-    pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
-
     # path to particle data 
     DMOname = DMOsim.path
     # load in the DMO sim to get particle data and get accurate halonums for the main halo in each snapshot
     # load_tangos_data is a part of the 'utils.py' file in the tagging dir, it loads in the tangos database 'DMOsim' and returns the main halos tangos object, outputs and halonums at all timesteps
     
-    t_all, red_all, main_halo,halonums,outputs = load_indexing_data(DMOsim,1)
+    main_halo = DMOsim.timesteps[tstep].halos[int(halonumber)]
+
+    # halonums for all snapshots 
+    halonums = main_halo.calculate_for_progenitors('halo_number()')[0][::-1]
+
+    # time and redshift of each snapshot 
+    t_all = main_halo.calculate_for_progenitors('t()')[0][::-1]
+    red_all = main_halo.calculate_for_progenitors('z()')[0][::-1]
     
+    outputs_all = np.array([DMOsim.timesteps[i].__dict__['extension'] for i in range(len(DMOsim.timesteps))])
+    times_tangos = np.array([ DMOsim.timesteps[i].__dict__['time_gyr'] for i in range(len(DMOsim.timesteps)) ])
+    
+    outputs = outputs_all[np.isin(times_tangos, t_all)]
+
+    outputs.sort()
+
     # Get stellar masses at each redshift using darklight for insitu tagging (mergers = False excludes accreted mass)
     t,redshift,vsmooth,sfh_insitu,mstar_s_insitu,mstar_total =DarkLight(main_halo,nscatter=0,vthres=26.3,zre=4.,pre_method='fiducial',post_method='schechter',post_scatter_method='increasing',binning='3bins',timesteps='sim',mergers=True,DMO=True,occupation=2.5e7,fn_vmax=None)
 
@@ -549,13 +561,13 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
     '''
 
     #sets halo catalogue priority to HOP by default  (because all the EDGE tangos db are currently hop based)
-    pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
+    #pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
 
     # extracts name of DMO simulation
     DMOname = DMOsim.path
     
     # load-in tangos data upto given timestep
-    main_halo = DMOsim.timesteps[tstep].halos[int(halonumber) - 1]
+    main_halo = DMOsim.timesteps[tstep].halos[int(halonumber)]
 
     # halonums for all snapshots 
     halonums = main_halo.calculate_for_progenitors('halo_number()')[0][::-1]
