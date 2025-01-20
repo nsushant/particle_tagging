@@ -178,7 +178,7 @@ def tag(DMOparticles, hDMO, snapshot_stellar_mass,free_param_value = 0.01, previ
     
 
 # under construction
-def BE_tag_over_full_sim(DMOsim, free_param_value = 0.01, PE_file=None,pynbody_path  = None, occupation_frac = 'edge1' ,particle_storage_filename=None, AHF_centers_file=None, mergers = True):
+def BE_tag_over_full_sim(DMOsim,halonumber ,free_param_value = 0.01, PE_file=None,pynbody_path  = None, occupation_frac = 'edge1' ,particle_storage_filename=None, AHF_centers_file=None, mergers = True):
 
     '''
 
@@ -198,14 +198,14 @@ def BE_tag_over_full_sim(DMOsim, free_param_value = 0.01, PE_file=None,pynbody_p
     
     '''
     
-    pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
+    #pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
 
     # path to particle data 
     DMOname = DMOsim.path
     # load in the DMO sim to get particle data and get accurate halonums for the main halo in each snapshot
     # load_tangos_data is a part of the 'utils.py' file in the tagging dir, it loads in the tangos database 'DMOsim' and returns the main halos tangos object, outputs and halonums at all timesteps
 
-    main_halo = DMOsim.timesteps[-1].halos[0]
+    main_halo = DMOsim.timesteps[-1].halos[int(halonumber)]
 
     halonums = main_halo.calculate_for_progenitors('halo_number()')[0][::-1]
 
@@ -217,7 +217,6 @@ def BE_tag_over_full_sim(DMOsim, free_param_value = 0.01, PE_file=None,pynbody_p
 
     outputs = outputs_all[np.isin(times_tangos, t_all)]
     
-    #t_all, red_all, main_halo,halonums,outputs = load_indexing_data(DMOsim,1)
     
     # Get stellar masses at each redshift using darklight for insitu tagging (mergers = False excludes accreted mass)
     t,redshift,vsmooth,sfh_insitu,mstar_s_insitu,mstar_total =DarkLight(main_halo,nscatter=0,vthres=26.3,zre=4.,pre_method='fiducial',post_method='schechter',post_scatter_method='increasing',binning='3bins',timesteps='sim',mergers=False,DMO=True,occupation=2.5e7,fn_vmax=None)
@@ -391,8 +390,6 @@ def BE_tag_over_full_sim(DMOsim, free_param_value = 0.01, PE_file=None,pynbody_p
 
             '''                                                                                                                                    
             pynbody.analysis.halo.center(h)
-
-            pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
 
         
             try:                                                                                                                                                                                              
@@ -601,8 +598,6 @@ def BE_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_value = 
     '''
         
 
-    #sets halo catalogue priority  
-    pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
 
     # name of DMO simulation
     DMOname = DMOsim.path
