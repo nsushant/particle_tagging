@@ -182,7 +182,7 @@ def angmom_tag_over_full_sim(DMOsim, halonumber = 0 ,free_param_value = 0.01, py
     # load in the DMO sim to get particle data and get accurate halonums for the main halo in each snapshot
     # load_tangos_data is a part of the 'utils.py' file in the tagging dir, it loads in the tangos database 'DMOsim' and returns the main halos tangos object, outputs and halonums at all timesteps
     
-    main_halo = DMOsim.timesteps[tstep].halos[int(halonumber)]
+    main_halo = DMOsim.timesteps[tstep].halos[int(halonumber) - 1]
 
     # halonums for all snapshots 
     halonums = main_halo.calculate_for_progenitors('halo_number()')[0][::-1]
@@ -567,7 +567,7 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
     DMOname = DMOsim.path
     
     # load-in tangos data upto given timestep
-    main_halo = DMOsim.timesteps[tstep].halos[int(halonumber)]
+    main_halo = DMOsim.timesteps[tstep].halos[int(halonumber) - 1]
 
     # halonums for all snapshots 
     halonums = main_halo.calculate_for_progenitors('halo_number()')[0][::-1]
