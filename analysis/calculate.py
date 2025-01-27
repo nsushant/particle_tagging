@@ -29,7 +29,7 @@ def projected_halfmass_radius(particles, tagged_masses):
     R_half - 2D stellar projected half-mass radius 
 
     '''
-    particle_distances =  np.sqrt(particles['x']**2 + particles['y']**2 + particles['z']**2)
+    particle_distances =  np.sqrt(particles['x']**2 + particles['y']**2 )
   
     idxs_distances_sorted = np.argsort(particle_distances)
 

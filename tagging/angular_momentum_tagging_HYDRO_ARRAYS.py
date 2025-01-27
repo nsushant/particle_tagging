@@ -26,6 +26,33 @@ import random
 import pynbody
 from .utils import *
 
+
+
+
+
+
+def integrate_sfr(sfr,tend):
+    
+    #print("length of sfr:",len(sfr))
+    
+    mstar_per_gyr = sfr*(10**9)
+    
+    #print("length of sfr:",len(mstar_per_gyr))
+    
+    mstar = mstar_per_gyr*0.02
+    
+    #print("length of:",len(mstar))
+    time_bins = np.arange(0,tend,0.02)
+    
+    t_array = time_bins[1:]
+
+    mstar_array = np.cumsum(mstar)
+    #print("length of:",len(mstar_array))
+    return mstar_array,t_array
+
+
+
+
 def rank_order_particles_by_angmom(DMOparticles, hDMO):
     
     '''
@@ -158,7 +185,7 @@ def tag(DMOparticles, hDMO, snapshot_stellar_mass,free_param_value = 0.01, previ
     
 
 
-def angmom_tag_over_full_sim(DMOsim, HYDROsim, free_param_value = 0.01, pynbody_path  = None, occupation_frac = 'all' ,particle_storage_filename=None, AHF_centers_file=None, mergers = True):
+def angmom_tag_over_full_sim(DMOname, HYDROname, free_param_value = 0.01, pynbody_path  = None, occupation_frac = 'all' ,particle_storage_filename=None, AHF_centers_file=None, mergers = True):
 
     '''
 
@@ -179,14 +206,40 @@ def angmom_tag_over_full_sim(DMOsim, HYDROsim, free_param_value = 0.01, pynbody_
     '''
     
     pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
+    
+    haloname = DMOname.split("_")[0]
+    
+    tangos.core.init_db("/scratch/dp101/shared/EDGE/tangos/"+str(haloname)+".db") 
 
+    HYDROsim = tangos.get_simulation(HYDROname)
+
+    # Uncomment to use hydro Mstars                                                                                                                                
+    hydrohalo = HYDROsim.timesteps[-1].halos[0]
+
+    ttangos = hydrohalo.calculate_for_progenitors('t()')[0][::-1]
+
+    redshift = hydrohalo.calculate_for_progenitors('z()')[0][::-1]
+
+    #mstar_s_insitu = hydrohalo.calculate_for_progenitors("M200c_stars")[0][::-1]                                                                                  
+
+    #mstar_total = mstar_s_insitu                                                                                                                                  
+
+    mstar_s_insitu,t = integrate_sfr(hydrohalo["SFR_histogram"],ttangos[-1])
+    
+    print("mstar produced by integration", len(mstar_s_insitu))
+
+
+
+    mstar_total = mstar_s_insitu
     # path to particle data 
-    DMOname = DMOsim.path
+    DMOsim = tangos.get_simulation(DMOname)
     # load in the DMO sim to get particle data and get accurate halonums for the main halo in each snapshot
     # load_tangos_data is a part of the 'utils.py' file in the tagging dir, it loads in the tangos database 'DMOsim' and returns the main halos tangos object, outputs and halonums at all timesteps
-        
-    main_halo = DMOsim.timesteps[-1].halos[0]
+    print(DMOsim)
 
+    main_halo = DMOsim.timesteps[-1].halos[0]
+    zmerge, qmerge, hmerge = get_mergers_of_major_progenitor(main_halo)
+    
     halonums = main_halo.calculate_for_progenitors('halo_number()')[0][::-1]
 
     t_all = main_halo.calculate_for_progenitors('t()')[0][::-1]
@@ -198,37 +251,43 @@ def angmom_tag_over_full_sim(DMOsim, HYDROsim, free_param_value = 0.01, pynbody_
     outputs = outputs_all[np.isin(times_tangos, t_all)]
 
     outputs.sort()
-
+    
+    '''
     #t_all, red_all, main_halo,halonums,outputs = load_indexing_data(DMOsim,1)
     
     # Get stellar masses at each redshift using darklight for insitu tagging (mergers = False excludes accreted mass)
-    '''
+    
+    HYDROsim = darklight.edge.load_tangos_data(HYDROname,machine="dirac")
+    
     # Uncomment to use hydro Mstars 
     hydrohalo = HYDROsim.timesteps[-1].halos[0]
 
-    t = hydrohalo.calculate_for_progenitors('t()')[0][::-1]
+    ttangos = hydrohalo.calculate_for_progenitors('t()')[0][::-1]
 
     redshift = hydrohalo.calculate_for_progenitors('z()')[0][::-1]
 
-    mstar_s_insitu = hydrohalo.calculate_for_progenitors("M200c_stars")[0][::-1]
+    #mstar_s_insitu = hydrohalo.calculate_for_progenitors("M200c_stars")[0][::-1]
 
-    mstar_total = mstar_s_insitu 
+    #mstar_total = mstar_s_insitu 
+    
+    t,mstar_s_insitu = integrate_sfr(hydrohalo["SFR_histogram"],ttangos[-1])
+
+    mstar_total = mstar_s_insitu
     '''
-
-
-    t,redshift,vsmooth,sfh_insitu,mstar_s_insitu,mstar_total =DarkLight(main_halo,nscatter=0,vthres=26.3,zre=4.,pre_method='fiducial',post_method='schechter',post_scatter_method='increasing',binning='3bins',timesteps='sim',mergers=True,DMO=False,occupation=2.5e7,fn_vmax=None)
+    #t,redshift,vsmooth,sfh_insitu,mstar_s_insitu,mstar_total =DarkLight(main_halo,nscatter=0,vthres=26.3,zre=4.,pre_method='fiducial',post_method='schechter',post_scatter_method='increasing',binning='3bins',timesteps='sim',mergers=True,DMO=False,occupation=2.5e7,fn_vmax=None)
 
     
     print("Length of output array : ",len(outputs))
     print("Lengths of time arrays: ",len(t_all),len(t))
     print("Length of MSTAR array: ",len(mstar_s_insitu))
 
+    
     '''
-    if len(outputs) != len(mstar_s_insitu):
+    if len(outputs) > len(mstar_s_insitu):
         
         mstar_s_insitu = np.pad(mstar_s_insitu,(len(outputs)-len(mstar_s_insitu),0))
     '''
-    
+        
     print("Length of Corrected MSTAR array: ",len(mstar_s_insitu))
 
     #t,redshift,vsmooth,sfh_insitu,mstar_s_insitu,mstar_total =DarkLight(main_halo,nscatter=0,vthres=26.3,zre=4.,pre_method='fiducial',post_method='schechter',post_scatter_method='increasing',binning='3bins',timesteps='sim',mergers=True,DMO=False,occupation=2.5e7,fn_vmax=None)
@@ -236,7 +295,7 @@ def angmom_tag_over_full_sim(DMOsim, HYDROsim, free_param_value = 0.01, pynbody_
     #calculate when the mergers took place and grab all the tangos halo objects involved in the merger (zmerge = merger redshift, hmerge = merging halo objects,qmerge = merger ratio)
 
 
-    zmerge, qmerge, hmerge = get_mergers_of_major_progenitor(main_halo)
+    #zmerge, qmerge, hmerge = get_mergers_of_major_progenitor(main_halo)
     
     if ( len(red_all) != len(outputs) ) : 
 
@@ -293,10 +352,15 @@ def angmom_tag_over_full_sim(DMOsim, HYDROsim, free_param_value = 0.01, pynbody_
 
         # 't' is the darklight time array 
         # idrz is thus the index of the mstar value calculated at the closest time to that of the snap
-        idrz = np.where(t==t_val)[0][0]
+        idrz = np.argmin(abs(t - t_val))
+            
+        # index of previous snap's mstar value in darklight array
+        idrz_previous = np.argmin(abs(t - t_all[i-1])) if idrz>0 else None 
+
+
 
         # index of previous snap's mstar value in darklight array
-        idrz_previous = np.where(t == t_all[i-1])[0][0] if idrz>0 else None 
+        #idrz_previous = np.where(t == t_all[i-1])[0][0] if idrz>0 else None 
 
         # current snap's darklight calculated stellar mass 
         msn = mstar_s_insitu[idrz]              
@@ -484,10 +548,11 @@ def angmom_tag_over_full_sim(DMOsim, HYDROsim, free_param_value = 0.01, pynbody_
                     redshift_2= hDM.calculate_for_progenitors("z()")[0][::-1]
                     mstar_in2 = hDM.calculate_for_progenitors("M200c_stars")[0][::-1]
                     mstar_merging = mstar_in2
+                    
                     '''
 
-
                     t_2,redshift_2,vsmooth_2,sfh_in2,mstar_in2,mstar_merging = DarkLight(hDM,nscatter=0,vthres=26.3,zre=4.,pre_method='fiducial',post_method='schechter',post_scatter_method='increasing',binning='3bins',timesteps='sim',mergers=True,DMO=False,occupation=2.5e7,fn_vmax=None)
+                    
 
                     #occupation='edge1', pre_method='fiducial_with_turnover', post_scatter_method='flat', DMO=True,mergers = True)
                     #DarkLight(hDM,DMO=True)#,poccupied=occupation_frac,mergers=True)
@@ -533,6 +598,7 @@ def angmom_tag_over_full_sim(DMOsim, HYDROsim, free_param_value = 0.01, pynbody_
 
                     try:
                         h_merge = DMOparticles.halos()[int(hDM.calculate('halo_number()'))-1]
+
                         pynbody.analysis.halo.center(h_merge.dm)
                         
                         #r200c_pyn_acc = pynbody.analysis.halo.virial_radius(h_merge.d, overden=200, r_max=None, rho_def='critical')
@@ -540,7 +606,16 @@ def angmom_tag_over_full_sim(DMOsim, HYDROsim, free_param_value = 0.01, pynbody_
                         print('centering data unavailable, skipping',ex)
                         continue
                                                                                                            
-                    r200c_pyn_acc = pynbody.analysis.halo.virial_radius(h_merge.d, overden=200, r_max=None, rho_def='critical')
+                    try: 
+                        r200c_pyn_acc = pynbody.analysis.halo.virial_radius(h_merge.d, overden=200, r_max=None, rho_def='critical')
+                    except Exception as ex:
+                        print(ex)
+
+                        try: 
+                            r200c_pyn_acc = hDM["r200c"]
+                        except: 
+                            continue 
+
                     print('mass_select:',mass_select_merge)
                     #print('total energy  ---------------------------------------------------->',DMOparticles.loadable_keys())
                     print('sorting accreted particles by TE')

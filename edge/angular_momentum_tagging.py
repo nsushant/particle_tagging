@@ -261,7 +261,7 @@ def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_fi
 
     '''
      
-    path_AHF_halonums = "AHF_halonums/DMO/"+sim_name+".csv"
+    path_AHF_halonums = "AHF_halonums/DMO/"+sim_name+".csv" if AHF_centers_supplied==True else "" 
     
     AHF_halonums = None
 

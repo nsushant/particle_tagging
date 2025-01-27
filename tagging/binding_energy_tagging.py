@@ -44,7 +44,7 @@ def rank_order_particles_by_BE(particles, path_to_pe_file = None):
     #particles_inside_r200 = particles[ sqrt( particles['pos'][:,0]**2 + particles['pos'][:,1]**2 + particles['pos'][:,2]**2) <= halo['r200c']]
     
     # softening length array needs to have the same shape as particles_inside_r200  
-    softening_length = pynbody.array.SimArray(np.ones(len(particles_inside_r200))*10.0, units='pc', sim=None)
+    softening_length = pynbody.array.SimArray(np.ones(len(particles))*10.0, units='pc', sim=None)
         
     '''
     # This part of the function is only to be uncommented if potentials are to be read in from a file (rather than being calculated directly)
