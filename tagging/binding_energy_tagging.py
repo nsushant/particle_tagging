@@ -40,9 +40,6 @@ def rank_order_particles_by_BE(particles, path_to_pe_file = None):
     '''
     
     
-    # fetch particles inside the R200 (here we use the r200 stored in the supplied tangos database)
-    #particles_inside_r200 = particles[ sqrt( particles['pos'][:,0]**2 + particles['pos'][:,1]**2 + particles['pos'][:,2]**2) <= halo['r200c']]
-    
     # softening length array needs to have the same shape as particles_inside_r200  
     softening_length = pynbody.array.SimArray(np.ones(len(particles))*10.0, units='pc', sim=None)
         
@@ -80,7 +77,7 @@ def rank_order_particles_by_BE(particles, path_to_pe_file = None):
 
 
 
-def assign_stars_to_particles(snapshot_stellar_mass, particles_sorted_by_BE, tagging_fraction, selected_particles = [np.array([]),np.array([])]):
+def assign_stars_to_particles(snapshot_stellar_mass, particles_sorted_by_BE, tagging_fraction):
     
     '''
 
@@ -113,28 +110,7 @@ def assign_stars_to_particles(snapshot_stellar_mass, particles_sorted_by_BE, tag
     #dividing stellar mass evenly over all the particles in the most bound fraction 
     
     stellar_mass_assigned = float(snapshot_stellar_mass/len(list(particles_in_tagging_fraction))) if len(list(particles_in_tagging_fraction))>0 else 0
-    print("total stellar mass growth in this snap: ", snapshot_stellar_mass)
-    print("stellar mass assigned per particle: ",  stellar_mass_assigned)
     
-    #check if particles have been selected before 
-    
-    idxs_previously_selected = np.where(np.isin(selected_particles[0],particles_in_tagging_fraction)==True)
-    
-    # if selected before increment mstar 
-    selected_particles[1] = np.where(np.isin(selected_particles[0],particles_in_tagging_fraction)==True,selected_particles[1]+stellar_mass_assigned,selected_particles[1]) 
-    
-    #if not selected previously, add to array
-    
-    idxs_not_previously_selected = np.where(np.isin(particles_in_tagging_fraction,selected_particles[0])==False)
-
-    how_many_not_previously_selected = particles_in_tagging_fraction[idxs_not_previously_selected].shape[0]
-    
-    selected_particles_new_iords = np.append(selected_particles[0],particles_in_tagging_fraction[idxs_not_previously_selected])
-    
-    selected_particles_new_masses = np.append(selected_particles[1],np.repeat(stellar_mass_assigned,how_many_not_previously_selected))
-    
-    selected_particles = np.array([selected_particles_new_iords,selected_particles_new_masses])
-
     array_iords = particles_in_tagging_fraction
     
     #Uncomment this for old behaviour
@@ -143,11 +119,11 @@ def assign_stars_to_particles(snapshot_stellar_mass, particles_sorted_by_BE, tag
  
     updates_to_arrays = np.array([array_iords,array_masses])
     
-    return selected_particles,updates_to_arrays
+    return updates_to_arrays
     
 
 
-def tag(DMOparticles, hDMO, snapshot_stellar_mass,free_param_value = 0.01, previously_tagged_particles = [np.array([]),np.array([])]):
+def tag(DMOparticles, hDMO, snapshot_stellar_mass,free_param_value = 0.01):
 
     '''
     
@@ -174,11 +150,11 @@ def tag(DMOparticles, hDMO, snapshot_stellar_mass,free_param_value = 0.01, previ
     '''
     particles_ordered_by_angmom = rank_order_particles_by_angmom(DMOparticles, hDMO)
 
-    return assign_stars_to_particles(snapshot_stellar_mass,particles_sorted_by_angmom, free_param_value, selected_particles = previously_tagged_particles)
+    return assign_stars_to_particles(snapshot_stellar_mass,particles_sorted_by_angmom, free_param_value)
     
 
 # under construction
-def BE_tag_over_full_sim(DMOsim, free_param_value = 0.01, PE_file=None,pynbody_path  = None, occupation_frac = 'edge1' ,particle_storage_filename=None, AHF_centers_file=None, mergers = True):
+def BE_tag_over_full_sim(DMOsim,halonumber ,free_param_value = 0.01, PE_file=None,pynbody_path  = None, occupation_frac = 'edge1' ,particle_storage_filename=None, AHF_centers_file=None, mergers = True):
 
     '''
 
@@ -198,14 +174,14 @@ def BE_tag_over_full_sim(DMOsim, free_param_value = 0.01, PE_file=None,pynbody_p
     
     '''
     
-    pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
+    #pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
 
     # path to particle data 
     DMOname = DMOsim.path
     # load in the DMO sim to get particle data and get accurate halonums for the main halo in each snapshot
     # load_tangos_data is a part of the 'utils.py' file in the tagging dir, it loads in the tangos database 'DMOsim' and returns the main halos tangos object, outputs and halonums at all timesteps
 
-    main_halo = DMOsim.timesteps[-1].halos[0]
+    main_halo = DMOsim.timesteps[-1].halos[int(halonumber)]
 
     halonums = main_halo.calculate_for_progenitors('halo_number()')[0][::-1]
 
@@ -217,7 +193,6 @@ def BE_tag_over_full_sim(DMOsim, free_param_value = 0.01, PE_file=None,pynbody_p
 
     outputs = outputs_all[np.isin(times_tangos, t_all)]
     
-    #t_all, red_all, main_halo,halonums,outputs = load_indexing_data(DMOsim,1)
     
     # Get stellar masses at each redshift using darklight for insitu tagging (mergers = False excludes accreted mass)
     t,redshift,vsmooth,sfh_insitu,mstar_s_insitu,mstar_total =DarkLight(main_halo,nscatter=0,vthres=26.3,zre=4.,pre_method='fiducial',post_method='schechter',post_scatter_method='increasing',binning='3bins',timesteps='sim',mergers=False,DMO=True,occupation=2.5e7,fn_vmax=None)
@@ -236,9 +211,7 @@ def BE_tag_over_full_sim(DMOsim, free_param_value = 0.01, PE_file=None,pynbody_p
     hmerge_added, z_set_vals = group_mergers(zmerge,hmerge)
 
     ##################################################### SECOND LOOP ###############################################################
-    
-    selected_particles = np.array([[np.nan],[np.nan]])
-    
+        
     # number of stars left over after selection (per iteration)
     leftover=0
 
@@ -392,8 +365,6 @@ def BE_tag_over_full_sim(DMOsim, free_param_value = 0.01, PE_file=None,pynbody_p
             '''                                                                                                                                    
             pynbody.analysis.halo.center(h)
 
-            pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
-
         
             try:                                                                                                                                                                                              
                 r200c_pyn = pynbody.analysis.halo.virial_radius(h.d, overden=200, r_max=None, rho_def='critical')                                                                                             
@@ -421,7 +392,7 @@ def BE_tag_over_full_sim(DMOsim, free_param_value = 0.01, PE_file=None,pynbody_p
                 print("NO PARTICLES IN THE SORTED BY BE ARRAY")
                 continue
             
-            selected_particles,array_to_write = assign_stars_to_particles(mass_select,particles_sorted_by_BE,float(free_param_value),selected_particles = selected_particles)
+            array_to_write = assign_stars_to_particles(mass_select,particles_sorted_by_BE,float(free_param_value))
 
             print('writing insitu particles to output file')
             
@@ -546,8 +517,7 @@ def BE_tag_over_full_sim(DMOsim, free_param_value = 0.01, PE_file=None,pynbody_p
         
                     print('assinging stars to accreted particles')
 
-                    selected_particles,array_to_write_accreted = assign_stars_to_particles(mass_select_merge,accreted_particles_sorted_by_BE,float(free_param_value),selected_particles = selected_particles)
-                    
+                    array_to_write_accreted = assign_stars_to_particles(mass_select_merge,accreted_particles_sorted_by_BE,float(free_param_value))
                     
 
                     tagged_iords_to_write = np.append(tagged_iords_to_write,array_to_write_accreted[0])
@@ -579,7 +549,7 @@ def BE_tag_over_full_sim(DMOsim, free_param_value = 0.01, PE_file=None,pynbody_p
 
 
 
-def BE_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_value = 0.01, PE_file=None, pynbody_path  = None, particle_storage_filename=None, AHF_centers_file=None, mergers = True, df_tagged_particles=None ,selected_particles=None,tag_typ='insitu'):
+def BE_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_value = 0.01, PE_file=None, pynbody_path  = None, particle_storage_filename=None, AHF_centers_file=None, mergers = True, df_tagged_particles=None,tag_typ='insitu'):
 
     '''
 
@@ -601,8 +571,6 @@ def BE_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_value = 
     '''
         
 
-    #sets halo catalogue priority  
-    pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
 
     # name of DMO simulation
     DMOname = DMOsim.path
@@ -642,9 +610,6 @@ def BE_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_value = 
     # group_mergers groups all merging halo objects by redshift.
     
     hmerge_added, z_set_vals = group_mergers(zmerge,hmerge)
-
-    if type(selected_particles) == type(None):
-        selected_particles = np.array([[np.nan],[np.nan]])
     
     # number of stars left over after selection (per iteration)
     leftover=0
@@ -825,7 +790,7 @@ def BE_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_value = 
                 print("No sorted particles")
                 continue
             
-            selected_particles,array_to_write = assign_stars_to_particles(mass_select,particles_sorted_by_BE,float(free_param_value),selected_particles = selected_particles)
+            array_to_write = assign_stars_to_particles(mass_select,particles_sorted_by_BE,float(free_param_value))
             
             
             print('writing '+str(tag_typ)+' particles to output file')
@@ -903,7 +868,7 @@ def BE_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_value = 
                     acc_halo_path_tagged = np.append(acc_halo_path_tagged,acc_halo_path[0][0])
 
                     print('---recursion triggered -----')
-                    df_tagged_particles,selected_particles = BE_tag_over_full_sim_recursive(DMOsim,tidx,halonumber_hDM, free_param_value = float(free_param_value),pynbody_path = pynbody_path, df_tagged_particles=df_tagged_particles,selected_particles=selected_particles,tag_typ='accreted')
+                    df_tagged_particles = BE_tag_over_full_sim_recursive(DMOsim,tidx,halonumber_hDM, free_param_value = float(free_param_value),pynbody_path = pynbody_path, df_tagged_particles=df_tagged_particles,tag_typ='accreted')
                     
                     #accreted_only_particle_ids = np.append(accreted_only_particle_ids,df_tagged_acc['iords'].values)
                     
@@ -955,7 +920,6 @@ def BE_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_value = 
                         #print(rank_order_particles_by_te(z_val, DMOparticles, hDM,'accreted'), 'output')
                         DMOparticles_acc_only = DMOparticles[sqrt(DMOparticles['pos'][:,0]**2 + DMOparticles['pos'][:,1]**2 + DMOparticles['pos'][:,2]**2) <= r200c_pyn_acc] 
     
-                        #DMOparticles_acc_only = DMOparticles[np.logical_not(np.isin(DMOparticles['iord'],selected_particles[0]))]
                                                 
                         try:
                             accreted_particles_sorted_by_BE = rank_order_particles_by_BE(DMOparticles_acc_only)
@@ -965,7 +929,7 @@ def BE_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_value = 
             
                         print('assinging stars to accreted particles')
     
-                        selected_particles,array_to_write_accreted = assign_stars_to_particles(mass_select_merge,accreted_particles_sorted_by_BE,float(free_param_value),selected_particles = selected_particles)
+                        array_to_write_accreted = assign_stars_to_particles(mass_select_merge,accreted_particles_sorted_by_BE,float(free_param_value))
                         
     
                         tagged_iords_to_write = np.append(tagged_iords_to_write,array_to_write_accreted[0])
@@ -996,7 +960,7 @@ def BE_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_value = 
         if particle_storage_filename != None:
             df_tagged_particles.to_csv(particle_storage_filename)
             
-    return df_tagged_particles,selected_particles
+    return df_tagged_particles
 
 
 
