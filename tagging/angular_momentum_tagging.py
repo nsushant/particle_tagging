@@ -60,7 +60,7 @@ def rank_order_particles_by_angmom(particles):
 
 
 
-def assign_stars_to_particles(snapshot_stellar_mass,particles_sorted_by_angmom,tagging_fraction,selected_particles = [np.array([]),np.array([])], total_stellar_mass=0):
+def assign_stars_to_particles(snapshot_stellar_mass,particles_sorted_by_angmom,tagging_fraction):
     
     '''
 
@@ -71,15 +71,9 @@ def assign_stars_to_particles(snapshot_stellar_mass,particles_sorted_by_angmom,t
     snapshot_stellar_mass - stellar mass to be tagged in given snapshot 
     particles_sorted_by_angmom - list of particle dark matter IDs sorted by their angular momenta. 
     tagging_fraction - defines the size of the free paramter used to perform tagging 
-    selected_particles - particle IDs of previously selected/tagged particles
     
     
     Returns: 
-    
-    selected_particles is a 2d array with rows = 2, cols = num of particles  
-    
-    selected_particles[0] = iords
-    selected_particles[1] = stellar mass
 
     updates_to_arrays = array updates that need to be written to an output file                  
    
@@ -97,32 +91,20 @@ def assign_stars_to_particles(snapshot_stellar_mass,particles_sorted_by_angmom,t
     
     #check if particles have been selected before 
     
-    idxs_previously_selected = np.where(np.isin(selected_particles[0],particles_in_tagging_fraction)==True)
-    
-    selected_particles[1] = np.where(np.isin(selected_particles[0],particles_in_tagging_fraction)==True,selected_particles[1]+stellar_mass_assigned,selected_particles[1]) 
     
     #if not selected previously, add to array
-    
-    idxs_not_previously_selected = np.where(np.isin(particles_in_tagging_fraction,selected_particles[0])==False)
-
-    how_many_not_previously_selected = particles_in_tagging_fraction[idxs_not_previously_selected].shape[0]
-    
-    selected_particles_new_iords = np.append(selected_particles[0],particles_in_tagging_fraction[idxs_not_previously_selected])
-    
-    selected_particles_new_masses = np.append(selected_particles[1],np.repeat(stellar_mass_assigned,how_many_not_previously_selected))
 
     
-    selected_particles = np.array([selected_particles_new_iords,selected_particles_new_masses])
-
     array_iords = particles_in_tagging_fraction
 
     #Uncomment this for old behaviour (where the mass per particle is the total mass tagged upto that point)
     #array_masses = np.append(selected_particles[1][idxs_previously_selected],np.repeat(stellar_mass_assigned,how_many_not_previously_selected))
     array_masses = np.repeat(stellar_mass_assigned,len(array_iords)) 
+    
     updates_to_arrays = np.array([array_iords,array_masses])
     
     
-    return selected_particles,updates_to_arrays
+    return updates_to_arrays
     
 
 
@@ -142,18 +124,13 @@ def tag(DMOparticles, hDMO, snapshot_stellar_mass,free_param_value = 0.01, previ
 
     Returns: 
     
-    selected_particles is a 2d array with rows = 2, cols = num of particles  
-    
-    selected_particles[0] = iords
-    selected_particles[1] = stellar mass
-
     updates_to_arrays = array updates that need to be written to an output file 
     
     
     '''
     particles_ordered_by_angmom = rank_order_particles_by_angmom(DMOparticles, hDMO)
 
-    return assign_stars_to_particles(snapshot_stellar_mass,particles_sorted_by_angmom, free_param_value, selected_particles = previously_tagged_particles)
+    return assign_stars_to_particles(snapshot_stellar_mass,particles_sorted_by_angmom, free_param_value)
     
 
 
@@ -214,7 +191,6 @@ def angmom_tag_over_full_sim(DMOsim, halonumber = 0 ,free_param_value = 0.01, py
     
     hmerge_added, z_set_vals = group_mergers(zmerge,hmerge)
     
-    selected_particles = np.array([[np.nan],[np.nan]])
     mstars_total_darklight_l = [] 
     
     # number of stars left over after selection (per iteration)
@@ -374,15 +350,12 @@ def angmom_tag_over_full_sim(DMOsim, halonumber = 0 ,free_param_value = 0.01, py
 
             #DMOparticles_insitu_only = DMOparticles[np.logical_not(np.isin(DMOparticles['iord'],accreted_only_particle_ids))]
 
-            #DMOparticles_insitu_only = DMOparticles_insitu_only[np.logical_not(np.isin(DMOparticles_insitu_only['iord'],selected_particles[0]))]
             particles_sorted_by_angmom = rank_order_particles_by_angmom( DMOparticles_insitu_only)
             
             if particles_sorted_by_angmom.shape[0] == 0:
                 continue
             
-            selected_particles,array_to_write = assign_stars_to_particles(mass_select,particles_sorted_by_angmom,float(free_param_value),selected_particles = selected_particles)
-            #halonums_indexing+=1
-            #selected_particles,array_to_write = assign_stars_to_particles(mass_select,particles_sorted_by_angmom,float(free_param_value),selected_particles = selected_particles,total_stellar_mass = mstar_s_insitu[-1])
+            array_to_write = assign_stars_to_particles(mass_select,particles_sorted_by_angmom,float(free_param_value))
             
             print('writing insitu particles to output file')
             
@@ -507,7 +480,7 @@ def angmom_tag_over_full_sim(DMOsim, halonumber = 0 ,free_param_value = 0.01, py
         
                     print('assinging stars to accreted particles')
 
-                    selected_particles,array_to_write_accreted = assign_stars_to_particles(mass_select_merge,accreted_particles_sorted_by_angmom,float(free_param_value),selected_particles = selected_particles)
+                    array_to_write_accreted = assign_stars_to_particles(mass_select_merge,accreted_particles_sorted_by_angmom,float(free_param_value))
                     
                     
 
@@ -539,7 +512,7 @@ def angmom_tag_over_full_sim(DMOsim, halonumber = 0 ,free_param_value = 0.01, py
     return df_tagged_particles
 
 
-def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_value = 0.01, pynbody_path  = None, particle_storage_filename=None, AHF_centers_filepath=None, mergers = True, df_tagged_particles=None ,selected_particles=None,tag_typ='insitu'):
+def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_value = 0.01, pynbody_path  = None, particle_storage_filename=None, AHF_centers_filepath=None, mergers = True, df_tagged_particles=None ,tag_typ='insitu'):
 
     '''
 
@@ -602,10 +575,6 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
     
     # group_mergers groups all merging halo objects by redshift.
     hmerge_added, z_set_vals = group_mergers(zmerge,hmerge)
-    
-    # since the script is recursive the array is initialized in the first run and re-used thereafter 
-    if type(selected_particles) == type(None):
-        selected_particles = np.array([[np.nan],[np.nan]])
 
     mstars_total_darklight_l = []
     
@@ -780,7 +749,7 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
             if particles_sorted_by_angmom.shape[0] == 0:
                 continue
             
-            selected_particles,array_to_write = assign_stars_to_particles(mass_select,particles_sorted_by_angmom,float(free_param_value),selected_particles = selected_particles,total_stellar_mass = mstar_s_insitu[-1])
+            array_to_write = assign_stars_to_particles(mass_select,particles_sorted_by_angmom,float(free_param_value))
             
             print('writing insitu particles to output file')
             
@@ -861,7 +830,7 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
                     acc_halo_path_tagged = np.append(acc_halo_path_tagged,acc_halo_path[0][0])
 
                     print('---recursion triggered -----')
-                    df_tagged_particles,selected_particles = angmom_tag_over_full_sim_recursive(DMOsim,tidx,halonumber_hDM, free_param_value = float(free_param_value),pynbody_path = pynbody_path, df_tagged_particles=df_tagged_particles,selected_particles=selected_particles,tag_typ='accreted')
+                    df_tagged_particles = angmom_tag_over_full_sim_recursive(DMOsim,tidx,halonumber_hDM, free_param_value = float(free_param_value),pynbody_path = pynbody_path, df_tagged_particles=df_tagged_particles,tag_typ='accreted')
                     
                     accreted_only_particle_ids = np.append(accreted_only_particle_ids,df_tagged_particles[df_tagged_particles['type'] != 'insitu']['iords'].values)
                     
@@ -937,7 +906,7 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
             
                         print('assinging stars to accreted particles')
     
-                        selected_particles,array_to_write_accreted = assign_stars_to_particles(mass_select_merge,accreted_particles_sorted_by_angmom,float(free_param_value),selected_particles = selected_particles,total_stellar_mass = mass_select_merge)
+                        array_to_write_accreted = assign_stars_to_particles(mass_select_merge,accreted_particles_sorted_by_angmom,float(free_param_value))
                         
     
                         tagged_iords_to_write = np.append(tagged_iords_to_write,array_to_write_accreted[0])
@@ -967,7 +936,7 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
         if particle_storage_filename != None:
             df_tagged_particles.to_csv(particle_storage_filename)
             
-    return df_tagged_particles,selected_particles
+    return df_tagged_particles
 
 
 
