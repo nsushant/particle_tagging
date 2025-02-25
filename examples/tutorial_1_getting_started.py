@@ -21,7 +21,7 @@ tangos.core.init_db('Halo1459.db')
 DMO_database = tangos.get_simulation('Halo1459_DMO')
 
 # angular momentum based particle tagging 
-df_tagged_particles = ptag.tag_particles(DMO_database , path_to_particle_data = 'Paticle_Data/1459_DMO', tagging_method = 'angular momentum', free_param_val = 0.01)
+df_tagged_particles = ptag.tag_particles(DMO_database , path_to_particle_data = 'Paticle_Data/1459_DMO', tagging_method = 'angular momentum', free_param_val = 0.001)
 
 # calculate half-mass radii of the tagged stellar populations
 df_half_mass_tagged = ptag.calculate_rhalf(DMO_database, df_tagged_particles, pynbody_path  = 'Paticle_Data/1459_DMO')
