@@ -985,11 +985,13 @@ def BE_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_value = 
 
 
 
+'''
 
+#function deprecated, use function from particle_tagging.edge.angular_momentum_tagging
 
 def angmom_calculate_reffs_over_full_sim(DMOsim, data_particles_tagged, pynbody_path  = None , AHF_centers_file = None):
 
-    '''
+    
 
     Given a tangos simulation, the function performs angular momentum based tagging over the full simulation. 
 
@@ -1002,9 +1004,6 @@ def angmom_calculate_reffs_over_full_sim(DMOsim, data_particles_tagged, pynbody_
     Returns: 
     
     dataframe with half-mass radii calculated using tagged particles. 
-    
-    '''
-
     
     
     pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
@@ -1206,7 +1205,7 @@ def angmom_calculate_reffs_over_full_sim(DMOsim, data_particles_tagged, pynbody_
     
     
     return df_reff
-
+'''
     
     
     
