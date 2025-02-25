@@ -13,18 +13,18 @@ Two new tagging methods have been developed and tested angainst the generally us
 2.  Spatial tagging - distributes stellar mass across the galaxy based on a Plummer Profile. (particle dark matter mass = stellar mass tagged)
 3.  Binding Energy tagging - associates stellar mass with dark matter particles using their binding energies. 
 
-The package has the following dependencies in its current form. 
+The package has the following dependencies in its current form. Brackets contain versions used during the development proccess
 
-1. Darklight
-2. Pynbody
-3. Tangos
-4. Numpy
-5. Pandas
-6. OS
+1. Darklight 
+2. Pynbody ('2.0.0-beta.13')
+3. Tangos ('1.9.3-beta')
+4. Numpy ('1.26.4')
+5. Pandas ('2.2.3')
+6. OS 
 7. csv
 8. random
-9. Seaborn (only for plotting scripts)
-10. Matplotlib (only for plotting scripts)
+9. Seaborn (only for plotting scripts, '0.13.2' and later)
+10. Matplotlib (only for plotting scripts, '3.8.3' and later)
 
 
 An example script is available in the 'examples' folder and demonstrates how the modules are used to tag particles in a simulation from the EDGE suite. This is a version of the angular momentum tagging script that has been 
