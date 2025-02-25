@@ -27,7 +27,21 @@ import pynbody
 from .utils import *
 
 
-def rank_order_particles_by_BE(particles, path_to_pe_file = None):
+'''
+def plum_const(hDMO,z_val,insitu):
+    if insitu == 'insitu':
+        return ((0.015*hDMO['r200c'])/1.3) if z_val > 4 else ((10**(0.1*hDMO['r200c'] - 4.2))/1.3)
+    else:
+        return ((0.015*hDMO['r200c'])/1.3)
+
+
+'''
+
+
+def rank_order_particles_by_BE(particles, hDMO,path_to_pe_file = None):
+    
+    print("tagging with BE")
+
     
     '''
     Inputs: 
@@ -39,9 +53,12 @@ def rank_order_particles_by_BE(particles, path_to_pe_file = None):
     
     '''
     
-    
     # softening length array needs to have the same shape as particles_inside_r200  
-    softening_length = pynbody.array.SimArray(np.ones(len(particles))*10.0, units='pc', sim=None)
+    #softening_length = pynbody.array.SimArray(np.ones(len(particles))*10.0, units='pc', sim=None)
+
+    particles_r200 = particles[ particles["r"] < hDMO['r200c'] ]
+    particles_r200['vel']-= particles_r200['vel'].mean(axis=0)
+    #softening_length = pynbody.array.SimArray(np.ones(len(particles_r200))*10.0, units='pc',sim=None)
         
     '''
     # This part of the function is only to be uncommented if potentials are to be read in from a file (rather than being calculated directly)
@@ -59,10 +76,12 @@ def rank_order_particles_by_BE(particles, path_to_pe_file = None):
     pe = pynbody.array.SimArray(calculated_potentials,units='G Msol kpc**-1',sim=None)
     
     '''
+    #particles_2r200 = particles[particles["r"] < 2*hDMO["r200c"]]
+    softening_length = pynbody.array.SimArray(np.ones(len(particles_r200))*10.0, units='pc',sim=None)
+    
+    calculated_potentials, calculated_force = pynbody.gravity.direct(particles_r200,np.asarray(particles_r200['pos']),eps=softening_length)
 
-    calculated_potentials, calculated_force = pynbody.gravity.direct(particles,np.asarray(particles['pos']),eps=softening_length)
-
-    kinetic_energies = particles['ke']
+    kinetic_energies = particles_r200['ke']
 
     # the in_units conversion here ensures that the potential and kinetic energies are in the same units 
     total_energy = np.asarray(calculated_potentials.in_units(kinetic_energies.units)) + np.asarray(kinetic_energies)
@@ -70,11 +89,11 @@ def rank_order_particles_by_BE(particles, path_to_pe_file = None):
     # value indicies sorted in ascending order (because we have negative energies, from most to least bound)
     sorted_indicies = np.argsort(total_energy.flatten())
 
-    particles_ordered_by_BE = np.asarray(particles['iord'])[sorted_indicies] if sorted_indicies.shape[0] != 0 else np.array([]) 
+    particles_ordered_by_BE = np.asarray(particles_r200['iord'])[sorted_indicies] if sorted_indicies.shape[0] != 0 else np.array([]) 
    
     return np.asarray(particles_ordered_by_BE)
 
-
+ 
 
 
 def assign_stars_to_particles(snapshot_stellar_mass, particles_sorted_by_BE, tagging_fraction):
@@ -374,7 +393,7 @@ def BE_tag_over_full_sim(DMOsim,halonumber ,free_param_value = 0.01, PE_file=Non
                 continue                                                                                                                                                                                      
                                                                                                                                                                             
                         
-            DMOparticles_insitu_only = DMOparticles[sqrt(DMOparticles['pos'][:,0]**2 + DMOparticles['pos'][:,1]**2 + DMOparticles['pos'][:,2]**2) <= r200c_pyn ] 
+            DMOparticles_insitu_only = DMOparticles.dm[sqrt(DMOparticles.dm['pos'][:,0]**2 + DMOparticles.dm['pos'][:,1]**2 + DMOparticles.dm['pos'][:,2]**2) <= r200c_pyn ] 
             
             #DMOparticles_insitu_only = DMOparticles_insitu_only[np.logical_not(np.isin(DMOparticles_insitu_only['iord'],subhalo_iords))]
 
@@ -386,7 +405,7 @@ def BE_tag_over_full_sim(DMOsim,halonumber ,free_param_value = 0.01, PE_file=Non
             '''
 
 
-            particles_sorted_by_BE = rank_order_particles_by_BE(DMOparticles_insitu_only)
+            particles_sorted_by_BE = rank_order_particles_by_BE(DMOparticles,hDMO)
 
             if particles_sorted_by_BE.shape[0] == 0:
                 print("NO PARTICLES IN THE SORTED BY BE ARRAY")
@@ -504,12 +523,12 @@ def BE_tag_over_full_sim(DMOsim,halonumber ,free_param_value = 0.01, PE_file=Non
                     #print('total energy  ---------------------------------------------------->',DMOparticles.loadable_keys())
                     print('sorting accreted particles by TE')
                     #print(rank_order_particles_by_te(z_val, DMOparticles, hDM,'accreted'), 'output')
-                    DMOparticles_acc_only = DMOparticles[sqrt(DMOparticles['pos'][:,0]**2 + DMOparticles['pos'][:,1]**2 + DMOparticles['pos'][:,2]**2) <= r200c_pyn_acc] 
+                    DMOparticles_acc_only = DMOparticles.dm[sqrt(DMOparticles.dm['pos'][:,0]**2 + DMOparticles.dm['pos'][:,1]**2 + DMOparticles.dm['pos'][:,2]**2) <= r200c_pyn_acc] 
 
                     #DMOparticles_acc_only = DMOparticles[np.logical_not(np.isin(DMOparticles['iord'],insitu_only_particle_ids))]
                                             
                     try:
-                        accreted_particles_sorted_by_BE = rank_order_particles_by_BE(DMOparticles_acc_only)
+                        accreted_particles_sorted_by_BE = rank_order_particles_by_BE(DMOparticles,hDM)
                     except Exception as esort:
                         print(esort)
                         continue

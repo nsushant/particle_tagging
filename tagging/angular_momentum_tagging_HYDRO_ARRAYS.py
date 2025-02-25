@@ -29,6 +29,12 @@ from .utils import *
 
 
 
+def process_sim_string(sim_string):
+    hname = sim_string.split("|")[0][5:]
+    hname = hname.strip()
+    hname = hname[1:]
+    hname = hname[:-1]
+    return hname 
 
 
 def integrate_sfr(sfr,tend):
@@ -228,8 +234,8 @@ def angmom_tag_over_full_sim(DMOname, HYDROname, free_param_value = 0.01, pynbod
     
     print("mstar produced by integration", len(mstar_s_insitu))
 
-
-
+    hydro_crossreff_df = pd.read_csv("dmo_hydro_crossreffs/dmo_hydro_crossreff_"+str(DMOname)+"no_overlap_check.csv")
+    
     mstar_total = mstar_s_insitu
     # path to particle data 
     DMOsim = tangos.get_simulation(DMOname)
@@ -551,12 +557,24 @@ def angmom_tag_over_full_sim(DMOname, HYDROname, free_param_value = 0.01, pynbod
                     
                     '''
 
-                    t_2,redshift_2,vsmooth_2,sfh_in2,mstar_in2,mstar_merging = DarkLight(hDM,nscatter=0,vthres=26.3,zre=4.,pre_method='fiducial',post_method='schechter',post_scatter_method='increasing',binning='3bins',timesteps='sim',mergers=True,DMO=False,occupation=2.5e7,fn_vmax=None)
+                    #t_2,redshift_2,vsmooth_2,sfh_in2,mstar_in2,mstar_merging = DarkLight(hDM,nscatter=0,vthres=26.3,zre=4.,pre_method='fiducial',post_method='schechter',post_scatter_method='increasing',binning='3bins',timesteps='sim',mergers=True,DMO=False,occupation=2.5e7,fn_vmax=None)
                     
+                    if np.isin(str(hDM),hydro_crossreff_df["halo"]):
+                        
+                        print(hydro_crossreff_df["halo"])
+                        
+                        idmstar = np.where(hydro_crossreff_df["halo"] == str(hDM))[0][0]
+                        
+                        mstar_merging = [float(hydro_crossreff_df.iloc[idmstar]["mstar"])]
+                        
+
+                    else:
+                        print("merging halo not found in hydro sim")
+                        continue
 
                     #occupation='edge1', pre_method='fiducial_with_turnover', post_scatter_method='flat', DMO=True,mergers = True)
                     #DarkLight(hDM,DMO=True)#,poccupied=occupation_frac,mergers=True)
-                    print(len(t_2))
+                    
                     print(mstar_merging)
                 except Exception as e :
                     print(e)
@@ -664,8 +682,8 @@ def angmom_tag_over_full_sim(DMOname, HYDROname, free_param_value = 0.01, pynbod
     return df_tagged_particles
 
 
-def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_value = 0.01, pynbody_path  = None, particle_storage_filename=None, AHF_centers_filepath=None, mergers = True, df_tagged_particles=None ,selected_particles=None,tag_typ='insitu'):
-
+def angmom_tag_over_full_sim_recursive(DMOname,HYDROname, halonumber,tstep, simstring_hydro=None,free_param_value = 0.01, pynbody_path  = None, particle_storage_filename=None, AHF_centers_filepath=None, mergers = True, df_tagged_particles=None ,selected_particles=None,tag_typ='insitu'):
+    
     '''
 
     Given a tangos simulation, the function performs angular momentum based tagging over all its snapshots.
@@ -687,9 +705,37 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
 
     #sets halo catalogue priority to HOP by default  (because all the EDGE tangos db are currently hop based)
     pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
+    
+    haloname = DMOname.split("_")[0]
+
+    tangos.core.init_db("/scratch/dp101/shared/EDGE/tangos/"+str(haloname)+".db")
+
+    HYDROsim = tangos.get_simulation(HYDROname)
+
+    # Uncomment to use hydro Mstars                                                                                                                                           
+    if (simstring_hydro == None):
+        hydrohalo = HYDROsim.timesteps[-1].halos[0]
+
+    else:
+        simstring = process_sim_string(simstring_hydro)
+        hydrohalo = tangos.get_halo(simstring)
+
+    ttangos = hydrohalo.calculate_for_progenitors('t()')[0][::-1]
+
+    redshift = hydrohalo.calculate_for_progenitors('z()')[0][::-1]
+
+    #mstar_s_insitu = hydrohalo.calculate_for_progenitors("M200c_stars")[0][::-1]                                                                                             
+
+    #mstar_total = mstar_s_insitu                                                                                                                                             
+    mstar_s_insitu,t = integrate_sfr(hydrohalo["SFR_histogram"],ttangos[-1])
+
+    print("mstar produced by integration", len(mstar_s_insitu))
+
+    hydro_crossreff_df = pd.read_csv("dmo_hydro_crossreffs/dmo_hydro_crossreff_"+str(DMOname)+"no_overlap_check.csv")
+    
 
     # extracts name of DMO simulation
-    DMOname = DMOsim.path
+    DMOsim = tangos.get_simulation(DMOname)
     
     # load-in tangos data upto given timestep
     main_halo = DMOsim.timesteps[tstep].halos[int(halonumber) - 1]
@@ -724,7 +770,7 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
 
     mstar_total = mstar_s_insitu 
     '''
-    t,redshift,vsmooth,sfh_insitu,mstar_s_insitu,mstar_total = DarkLight(main_halo,nscatter=0,vthres=26.3,zre=4.,pre_method='fiducial',post_method='schechter',post_scatter_method='increasing',binning='3bins',timesteps='sim',mergers=False,DMO=False,occupation=2.5e7,fn_vmax=None)
+    #t,redshift,vsmooth,sfh_insitu,mstar_s_insitu,mstar_total = DarkLight(main_halo,nscatter=0,vthres=26.3,zre=4.,pre_method='fiducial',post_method='schechter',post_scatter_method='increasing',binning='3bins',timesteps='sim',mergers=False,DMO=False,occupation=2.5e7,fn_vmax=None)
 
     # calculate when the mergers took place and grab all the tangos halo objects involved in the merger (zmerge = merger redshift, hmerge = merging halo objects,qmerge = merger ratio)
     # these are based on the HOP catalogue by default 
@@ -756,7 +802,7 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
 
     # total stellar mass selected 
     mstar_selected_total = 0
-
+    hydro_crossreff_df = pd.read_csv("dmo_hydro_crossreffs/dmo_hydro_crossreff_"+str(DMOname)+"no_overlap_check.csv")
     accreted_only_particle_ids = np.array([])
     insitu_only_particle_ids = np.array([])
 
@@ -983,25 +1029,45 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
                     mstar_merging = mstar_in2
                     '''
                     
-                    t_2,redshift_2,vsmooth_2,sfh_in2,mstar_in2,mstar_merging = DarkLight(hDM,nscatter=0,vthres=26.3,zre=4.,pre_method='fiducial',post_method='schechter',post_scatter_method='increasing',binning='3bins',timesteps='sim',mergers=True,DMO=False,occupation=2.5e7,fn_vmax=None)
+                    #t_2,redshift_2,vsmooth_2,sfh_in2,mstar_in2,mstar_merging = DarkLight(hDM,nscatter=0,vthres=26.3,zre=4.,pre_method='fiducial',post_method='schechter',post_scatter_method='increasing',binning='3bins',timesteps='sim',mergers=True,DMO=False,occupation=2.5e7,fn_vmax=None)
+                    
+                    if np.isin(str(hDM),hydro_crossreff_df["halo"]):
 
+                        idmstar = np.where(hydro_crossreff_df["halo"] == str(hDM))[0][0]
+
+                        mstar_merging = [float(hydro_crossreff_df.iloc[idmstar]["mstar"])]
+                    
+                    else: 
+                        continue
                     #occupation=occupation_frac, pre_method='fiducial_with_turnover', post_scatter_method='flat',DMO=True,mergers = True)
                     #occupation=2.5e7, pre_method='fiducial',post_method='fiducial',post_scatter_method='flat', DMO=True, mergers=True)
                     #occupation=2.5e7, pre_method='fiducial', post_method='fiducial', post_scatter_method='flat'
                 except Exception as e :
                     print(e)
-                    print('there are no darklight stars')
+                    print('error loading in mstar')
                     continue
 
                 if len(mstar_merging) == 0:
-                    print("Darklight unable to make predictions")
+                    print("No stars in this merging halo")
                     continue
-                
+                '''
                 if len(np.where(np.asarray(mstar_merging) > 0)[0]) == 0:
                     print("Darklight predicts no stars in this halo")
                     continue
-                                                                                                                                    
-                tidx = np.where(np.asarray(DMOsim.timesteps[:]) ==  hDMO.timestep)[0][0]
+                '''                                                                                                                 
+                
+                
+                
+                #tidx = np.where(np.asarray(DMOsim.timesteps) == hDMO.timestep)[0][0]
+                ##except: 
+                #print(DMOsim.timesteps[37],hDMO.timestep)
+                #print(str(DMOsim.timesteps[37])==str(hDMO.timestep))
+                #print(type(hDMO.timestep),type(DMOsim.timesteps[0]))
+                
+                arr = [str(elem) for elem in DMOsim.timesteps]
+
+                tidx = np.where(np.asarray(arr) == str(hDMO.timestep))[0][0]
+
                 acc_halo_path = hDM.calculate_for_progenitors('path()')
                 print('halonum merging:',hDM.calculate_for_progenitors('halo_number()'))
                 halonumber_hDM = hDM.calculate_for_progenitors('halo_number()')[0][0]
@@ -1011,12 +1077,15 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
                 # if halo has not been tagged on before, we want to perform tagging over its full lifetime (upto the current snap)
                 if ( len(np.where(np.isin(acc_halo_path,acc_halo_path_tagged) == True)[0]) == 0 ):
                     acc_halo_path_tagged = np.append(acc_halo_path_tagged,acc_halo_path[0][0])
-
+                    simstring_acc = hydro_crossreff_df["hydrohalo"].values[idmstar]
                     print('---recursion triggered -----')
-                    df_tagged_particles,selected_particles = angmom_tag_over_full_sim_recursive(DMOsim,tidx,halonumber_hDM, free_param_value = float(free_param_value),pynbody_path = pynbody_path, df_tagged_particles=df_tagged_particles,selected_particles=selected_particles,tag_typ='accreted')
+                    try: 
+                        df_tagged_particles,selected_particles = angmom_tag_over_full_sim_recursive(DMOname,HYDROname,halonumber_hDM,tidx,simstring_hydro=simstring_acc,free_param_value = float(free_param_value),pynbody_path = pynbody_path, mergers = False,df_tagged_particles=df_tagged_particles,selected_particles=selected_particles,tag_typ='accreted')
                     
-                    accreted_only_particle_ids = np.append(accreted_only_particle_ids,df_tagged_particles[df_tagged_particles['type'] != 'insitu']['iords'].values)
-                    
+                        accreted_only_particle_ids = np.append(accreted_only_particle_ids,df_tagged_particles[df_tagged_particles['type'] != 'insitu']['iords'].values)
+                    except: 
+                        continue 
+
                     print('---recursion end -----')
                                 
                     
@@ -1025,7 +1094,7 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
                     if len(mstar_merging)==0:
                         continue
     
-                    mass_select_merge= mstar_merging[-1] - mstar_merging[-2]  if len(mstar_merging) > 1 else mstar_merging[-1]
+                    mass_select_merge = mstar_merging[-1] - mstar_merging[-2]  if len(mstar_merging) > 1 else mstar_merging[-1]
     
                     print(mass_select_merge)
                     if int(mass_select_merge)<1:

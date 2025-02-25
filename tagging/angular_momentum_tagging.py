@@ -134,7 +134,7 @@ def tag(DMOparticles, hDMO, snapshot_stellar_mass,free_param_value = 0.01, previ
     
 
 
-def angmom_tag_over_full_sim(DMOsim, halonumber = 0 ,free_param_value = 0.01, pynbody_path  = None, occupation_frac = 'all' ,particle_storage_filename=None, AHF_centers_file=None, mergers = True):
+def angmom_tag_over_full_sim(DMOsim, halonumber = 1 ,free_param_value = 0.01, pynbody_path  = None, occupation_frac = 'all' ,particle_storage_filename=None, AHF_centers_file=None, mergers = True):
 
     '''
 
@@ -159,7 +159,7 @@ def angmom_tag_over_full_sim(DMOsim, halonumber = 0 ,free_param_value = 0.01, py
     # load in the DMO sim to get particle data and get accurate halonums for the main halo in each snapshot
     # load_tangos_data is a part of the 'utils.py' file in the tagging dir, it loads in the tangos database 'DMOsim' and returns the main halos tangos object, outputs and halonums at all timesteps
     
-    main_halo = DMOsim.timesteps[tstep].halos[int(halonumber) - 1]
+    main_halo = DMOsim.timesteps[-1].halos[int(halonumber) - 1]
 
     # halonums for all snapshots 
     halonums = main_halo.calculate_for_progenitors('halo_number()')[0][::-1]
@@ -280,7 +280,7 @@ def angmom_tag_over_full_sim(DMOsim, halonumber = 0 ,free_param_value = 0.01, py
                 # once the data from the snapshot has been loaded, .physical_units()
                 # converts all array’s units to be consistent with the distance, velocity, mass basis units specified.
                 DMOparticles.physical_units()
-                DMOparticles = DMOparticles.d 
+                
                 #print('total energy  ---------------------------------------------------->',DMOparticles['te'])
                 print('loaded data insitu')
             
@@ -443,7 +443,7 @@ def angmom_tag_over_full_sim(DMOsim, halonumber = 0 ,free_param_value = 0.01, py
                     try:
                         DMOparticles = pynbody.load(simfn)
                         DMOparticles.physical_units()
-                        DMOparticles = DMOparticles.d
+                    
                         print('loaded data in mergers')
                     # where this data isn't available, notify the user.
                     except:
@@ -512,7 +512,7 @@ def angmom_tag_over_full_sim(DMOsim, halonumber = 0 ,free_param_value = 0.01, py
     return df_tagged_particles
 
 
-def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_value = 0.01, pynbody_path  = None, particle_storage_filename=None, AHF_centers_filepath=None, mergers = True, df_tagged_particles=None ,tag_typ='insitu'):
+def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_value = 0.01,free_param_value_acc = 0.02 ,pynbody_path  = None, particle_storage_filename=None, AHF_centers_filepath=None, mergers = True, df_tagged_particles=None ,tag_typ='insitu'):
 
     '''
 
@@ -534,7 +534,7 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
     '''
 
     #sets halo catalogue priority to HOP by default  (because all the EDGE tangos db are currently hop based)
-    #pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
+    pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
 
     # extracts name of DMO simulation
     DMOname = DMOsim.path
@@ -702,7 +702,7 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
                 
                 # if the AHF centers are unavailable, the default HOP catalogue is used (which is zero indexed)
                 h = DMOparticles.halos()[int(halonums[i])-1]
-                h = h.dm
+                #h = h.dm
             
             elif type(AHF_centers_filepath) != type(None):
                 # if AHF centers are available then the priority is changed to the AHF catalogue (Which is 1 indexed)
@@ -711,7 +711,7 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
                 AHF_crossref = AHF_centers[AHF_centers['snapshot'] == outputs[i]]['AHF halonum'].values[0]
                 
                 h = DMOparticles.halos(halo_numbers="v1")[int(AHF_crossref)] 
-                h = h.dm
+                #h = h.dm
                 # the "children" are subhalos that need to be removed before centering on the main halo
                 children_ahf_int = h.properties['children']
             
@@ -828,10 +828,10 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
                 # if halo has not been tagged on before, we want to perform tagging over its full lifetime (upto the current snap)
                 if ( len(np.where(np.isin(acc_halo_path,acc_halo_path_tagged) == True)[0]) == 0 ):
                     acc_halo_path_tagged = np.append(acc_halo_path_tagged,acc_halo_path[0][0])
-
+                    ######################change
                     print('---recursion triggered -----')
-                    df_tagged_particles = angmom_tag_over_full_sim_recursive(DMOsim,tidx,halonumber_hDM, free_param_value = float(free_param_value),pynbody_path = pynbody_path, df_tagged_particles=df_tagged_particles,tag_typ='accreted')
-                    
+                    df_tagged_particles = angmom_tag_over_full_sim_recursive(DMOsim,tidx,halonumber_hDM, free_param_value = float(free_param_value_acc),free_param_value_acc = float(free_param_value_acc),pynbody_path = pynbody_path, df_tagged_particles=df_tagged_particles,tag_typ='accreted')
+                    ##################
                     accreted_only_particle_ids = np.append(accreted_only_particle_ids,df_tagged_particles[df_tagged_particles['type'] != 'insitu']['iords'].values)
                     
                     print('---recursion end -----')
@@ -906,7 +906,7 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
             
                         print('assinging stars to accreted particles')
     
-                        array_to_write_accreted = assign_stars_to_particles(mass_select_merge,accreted_particles_sorted_by_angmom,float(free_param_value))
+                        array_to_write_accreted = assign_stars_to_particles(mass_select_merge,accreted_particles_sorted_by_angmom,float(free_param_value_acc))
                         
     
                         tagged_iords_to_write = np.append(tagged_iords_to_write,array_to_write_accreted[0])

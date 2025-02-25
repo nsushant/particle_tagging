@@ -394,7 +394,7 @@ def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_fi
         PE_energy = np.array([])
         lum_based_halflight = np.array([])
 
-        AHF_centers = pd.read_csv(str(AHF_centers_file)) if AHF_centers_supplied == True else None
+        #AHF_centers = pd.read_csv(str(AHF_centers_file)) if AHF_centers_supplied == True else None
                 
         for i in range(len(outputs)):
 
@@ -502,7 +502,7 @@ def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_fi
                 
                 DMOparticles.physical_units()    
                 pynbody.analysis.halo.center(h.dm)
-                pynbody.analysis.angmom.faceon(h.dm)
+                #pynbody.analysis.angmom.faceon(h.dm)
 
             except Exception as e:
                 print('centering data unavailable',e)
@@ -550,13 +550,14 @@ def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_fi
                 
 
                 # new cutoff calc begins 
-                distances = np.sqrt(particle_selection_reff_tot['x']**2+particle_selection_reff_tot['y']**2 + particle_selection_reff_tot['z']**2)                
+                distances = np.sqrt(particle_selection_reff_tot['x']**2+particle_selection_reff_tot['y']**2) 
+                #+ particle_selection_reff_tot['z']**2)                
                             
                 idxs_distances_sorted = np.argsort(distances)
 
                 sorted_distances = np.sort(distances)
 
-                distance_ordered_iords = np.asarray(particle_selection_reff_tot['iord'][idxs_distances_sorted])
+                distance_ordered_iords = np.asarray([particle_selection_reff_tot['iord'][number] for number in idxs_distances_sorted])
                 
                 print('array lengths',len(set(distance_ordered_iords)),len(distance_ordered_iords))
 
