@@ -512,7 +512,7 @@ def angmom_tag_over_full_sim(DMOsim, halonumber = 1 ,free_param_value = 0.01, py
     return df_tagged_particles
 
 
-def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_value = 0.01,free_param_value_acc = 0.02 ,pynbody_path  = None, particle_storage_filename=None, AHF_centers_filepath=None, mergers = True, df_tagged_particles=None ,tag_typ='insitu'):
+def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_value = 0.001,free_param_value_acc = None ,pynbody_path  = None, particle_storage_filename=None, AHF_centers_filepath=None, mergers = True, df_tagged_particles=None ,tag_typ='insitu'):
 
     '''
 
@@ -532,6 +532,9 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
     dataframe with tagged particle masses at given times, redshifts and associated particle IDs  
     
     '''
+
+    if type(free_param_value_acc) == type(None): 
+        free_param_value_acc = free_param_value
 
     #sets halo catalogue priority to HOP by default  (because all the EDGE tangos db are currently hop based)
     pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
