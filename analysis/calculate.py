@@ -46,6 +46,9 @@ def projected_halfmass_radius(particles, tagged_masses):
 
 
 def calc_luminosity(particle_ages,masses):
+    
+    #### function adapted from pynbody pynbody.analysis.luminosity 
+    #### (see https://pynbody.github.io/pynbody/_modules/pynbody/analysis/luminosity.html)
 
     # Assumes stars have a metallicity of -2 (1/100 L_sun)
     metals = np.ones(len(particle_ages))*(3*10**(-4))
@@ -95,6 +98,9 @@ def calc_luminosity(particle_ages,masses):
     return lum_msol
 
 def calc_mags_tagged(particle_ages,masses,band='V'):
+    #### function adapted from pynbody pynbody.analysis.luminosity 
+    #### (see https://pynbody.github.io/pynbody/_modules/pynbody/analysis/luminosity.html)
+
 
     # Assumes stars have a metallicity of -2 (1/100 L_sun)
     metals = np.ones(len(particle_ages))*(3*10**(-4))
@@ -127,6 +133,10 @@ def calculate_x(pos,ndim):
 
 
 def calc_sb(tagged_DMO_particles, lums, bin_type='lin',nbins=100,ndims=2):
+
+    #### function adapted from pynbody pynbody.analysis.luminosity 
+    #### (see https://pynbody.github.io/pynbody/_modules/pynbody/analysis/luminosity.html)
+
     
     # SB = -2.5 Log10(L/ (4 pi d^2)) + 26.4 ?
     if ndims==3:
@@ -205,6 +215,10 @@ def calc_sb(tagged_DMO_particles, lums, bin_type='lin',nbins=100,ndims=2):
 
 def calc_lum_hydro(ages_h,masses_h,metals_h):
 
+    #### function adapted from pynbody pynbody.analysis.luminosity 
+    #### (see https://pynbody.github.io/pynbody/_modules/pynbody/analysis/luminosity.html)
+
+
     # Assumes stars have a metallicity of -2 (1/100 L_sun)
     metals = metals_h
     ages_h = ages_h
@@ -252,6 +266,10 @@ def calc_lum_hydro(ages_h,masses_h,metals_h):
     return lum_msol
 
 def calc_mags_hydro(ages_h,masses_h,metals_h):
+
+    #### function adapted from pynbody pynbody.analysis.luminosity 
+    #### (see https://pynbody.github.io/pynbody/_modules/pynbody/analysis/luminosity.html)
+
 
     # Assumes stars have a metallicity of -2 (1/100 L_sun)
     metals = metals_h
@@ -354,6 +372,9 @@ def calc_tot_lum(particle_ages,masses):
 
 
 def calc_halflight(sim,lum_for_each_iord,band='v',cylindrical=False):
+    #### function adapted from pynbody pynbody.analysis.luminosity 
+    #### (see https://pynbody.github.io/pynbody/_modules/pynbody/analysis/luminosity.html)
+
 
     '''
     Assumes ordering of ages_st is the same as sim_particles
@@ -404,11 +425,12 @@ def calc_halflight(sim,lum_for_each_iord,band='v',cylindrical=False):
 
 
 
-
-
-
 def calc_halflight_hydro(sim,lum_for_each_iord,band='v',cylindrical=False):
 
+    #### function adapted from pynbody pynbody.analysis.luminosity 
+    #### (see https://pynbody.github.io/pynbody/_modules/pynbody/analysis/luminosity.html)
+
+    
     '''
     Assumes ordering of ages_st is the same as sim_particles
     '''
