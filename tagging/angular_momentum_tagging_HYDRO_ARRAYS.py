@@ -234,7 +234,7 @@ def angmom_tag_over_full_sim(DMOname, HYDROname, free_param_value = 0.01, pynbod
     
     print("mstar produced by integration", len(mstar_s_insitu))
 
-    hydro_crossreff_df = pd.read_csv("dmo_hydro_crossreffs/dmo_hydro_crossreff_"+str(DMOname)+"no_overlap_check.csv")
+    hydro_crossreff_df = pd.read_csv("dmo_hydro_crossreffs/Vmax_crossmatch_"+str(DMOname)+".csv")
     
     mstar_total = mstar_s_insitu
     # path to particle data 
@@ -682,7 +682,7 @@ def angmom_tag_over_full_sim(DMOname, HYDROname, free_param_value = 0.01, pynbod
     return df_tagged_particles
 
 
-def angmom_tag_over_full_sim_recursive(DMOname,HYDROname, halonumber,tstep, simstring_hydro=None,free_param_value = 0.01, pynbody_path  = None, particle_storage_filename=None, AHF_centers_filepath=None, mergers = True, df_tagged_particles=None ,selected_particles=None,tag_typ='insitu'):
+def angmom_tag_over_full_sim_recursive(DMOname,HYDROname, halonumber,tstep, simstring_hydro=None,free_param_value = 0.01, pynbody_path  = None, particle_storage_filename=None, AHF_centers_filepath=None, mergers = True, df_tagged_particles=None ,selected_particles=None,tag_typ='insitu',main_halo_paths=None):
     
     '''
 
@@ -731,8 +731,7 @@ def angmom_tag_over_full_sim_recursive(DMOname,HYDROname, halonumber,tstep, sims
 
     print("mstar produced by integration", len(mstar_s_insitu))
 
-    hydro_crossreff_df = pd.read_csv("dmo_hydro_crossreffs/dmo_hydro_crossreff_"+str(DMOname)+"no_overlap_check.csv")
-    
+    hydro_crossreff_df = pd.read_csv("dmo_hydro_crossreffs/Vmax_crossmatch_"+str(DMOname)+".csv")
 
     # extracts name of DMO simulation
     DMOsim = tangos.get_simulation(DMOname)
@@ -819,6 +818,11 @@ def angmom_tag_over_full_sim_recursive(DMOname,HYDROname, halonumber,tstep, sims
     
     # record of tagged objects for the recursive run where the loop goes through all merging objects 
     acc_halo_path_tagged = np.array([])
+    
+    if type(main_halo_paths) == type(None):
+        halo_path = main_halo.calculate_for_progenitors('path()')
+        main_halo_paths = np.array([])
+        main_halo_paths = np.append(main_halo_paths,halo_path[0][0])
 
     if  type(df_tagged_particles) == type(None):    
         df_tagged_particles = pd.DataFrame({'iords':tagged_iords_to_write, 'mstar':tagged_mstars_to_write,'t':ts_to_write,'z':zs_to_write,'type':tagged_types_to_write})
@@ -1073,6 +1077,10 @@ def angmom_tag_over_full_sim_recursive(DMOname,HYDROname, halonumber,tstep, sims
                 halonumber_hDM = hDM.calculate_for_progenitors('halo_number()')[0][0]
 
                 print('halonum merging:',halonumber_hDM)
+                if type(main_halo_paths) != type(None):
+
+                    if ( len(np.where(np.isin(main_halo_paths,acc_halo_path_tagged) == True)[0]) != 0):
+                        continue
                 
                 # if halo has not been tagged on before, we want to perform tagging over its full lifetime (upto the current snap)
                 if ( len(np.where(np.isin(acc_halo_path,acc_halo_path_tagged) == True)[0]) == 0 ):
@@ -1080,7 +1088,7 @@ def angmom_tag_over_full_sim_recursive(DMOname,HYDROname, halonumber,tstep, sims
                     simstring_acc = hydro_crossreff_df["hydrohalo"].values[idmstar]
                     print('---recursion triggered -----')
                     try: 
-                        df_tagged_particles,selected_particles = angmom_tag_over_full_sim_recursive(DMOname,HYDROname,halonumber_hDM,tidx,simstring_hydro=simstring_acc,free_param_value = float(free_param_value),pynbody_path = pynbody_path, mergers = False,df_tagged_particles=df_tagged_particles,selected_particles=selected_particles,tag_typ='accreted')
+                        df_tagged_particles,selected_particles = angmom_tag_over_full_sim_recursive(DMOname,HYDROname,halonumber_hDM,tidx,simstring_hydro=simstring_acc,free_param_value = float(free_param_value),pynbody_path = pynbody_path, mergers = False,df_tagged_particles=df_tagged_particles,selected_particles=selected_particles,tag_typ='accreted',main_halo_paths=main_halo_paths)
                     
                         accreted_only_particle_ids = np.append(accreted_only_particle_ids,df_tagged_particles[df_tagged_particles['type'] != 'insitu']['iords'].values)
                     except: 

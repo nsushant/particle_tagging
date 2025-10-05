@@ -102,7 +102,7 @@ def edge_plot_tagged_vs_hydro_mass_dist(name_of_DMO_simulation, name_of_HYDRO_si
 
     print(data_all_tagged)
 
-    dataframe_for_hist = pd.DataFrame({ 'x':selected_parts['x'], 'y':selected_parts['y'],'r':selected_parts['r'], 'masses': np.asarray(selected_masses),'lums':lums_particles })
+    dataframe_for_hist = pd.DataFrame({ 'x':selected_parts['x'], 'y':selected_parts['y'],'z':selected_parts['z'],'r':selected_parts['r'], 'masses': np.asarray(selected_masses),'lums':lums_particles })
     #, 'ages': np.asarray(ordered_ages)})
     
     dataframe_for_hist = dataframe_for_hist.sort_values(by=['r'])
@@ -157,7 +157,7 @@ def edge_plot_tagged_vs_hydro_mass_dist(name_of_DMO_simulation, name_of_HYDRO_si
     
     sb_hydro_obs_units,r_sb_bins_hydro,sb_hydro = calc_sb(stars, data_all_stars['lums'].values, bin_type='log',nbins=50,ndims=2)
     
-    lum_hist = pd.DataFrame({'x':stars['x'],'y':stars['y'],'r':stars['r'],'mass':stars['mass'],'lums':lum_st})
+    lum_hist = pd.DataFrame({'x':stars['x'],'y':stars['y'],'z':stars['z'],'r':stars['r'],'mass':stars['mass'],'lums':lum_st})
 
     lum_hist = lum_hist.sort_values(by=['r'])
 
@@ -519,7 +519,7 @@ def edge_plot_tagged_vs_hydro_angmom_dist():
 
 
 
-def plot_tagged_vs_hydro_angmom_dist(DMO_halo_particles,HYDRO_halo_particles,file_with_tagged_particles,time_to_plot):
+def plot_tagged_vs_hydro_angmom_dist(DMO_halo_particles,HYDRO_halo_particles,file_with_tagged_particles,time_to_plot,cmd="return plot"):
     
     h = HYDRO_halo_particles
     s = h.st 
@@ -534,8 +534,7 @@ def plot_tagged_vs_hydro_angmom_dist(DMO_halo_particles,HYDRO_halo_particles,fil
     
     jstars = np.sqrt(stars['j'][:,0]**2+stars['j'][:,1]**2+stars['j'][:,2]**2)
     
-    #create dataframe                                                                                                                                                                                                                                              
-    
+    #create dataframe                                                                                                                                                                                                                                                  
     df = pd.DataFrame({'r':rdists,'j':jstars, 'mass':stars['mass']})
     
     s_tagged = DMO_halo_particles
@@ -561,12 +560,18 @@ def plot_tagged_vs_hydro_angmom_dist(DMO_halo_particles,HYDRO_halo_particles,fil
     mstar_tagged = [dt.loc[i]['mstar'] for i in tagged_particles['iord']]
     
     dftagged = pd.DataFrame({'r':rtagged,'j':jtagged, 'mass':mstar_tagged })
-                                                                                                                                                         
-    plt.hist(np.asarray(jtagged),weights= np.asarray(mstar_tagged),histtype='step',label="angmom tagging")                                                                                                                                                        
-    plt.hist(np.asarray(jstars),weights= np.asarray(stars['mass']),histtype='step',label="Hydro Sim")                                                                                                                                                             
-    plt.yscale('log')
+                                                                                                                                            
+    if cmd != "return plot": 
+
+        return dftagged,df 
+
+    else: 
+             
+        plt.hist(np.asarray(jtagged),weights= np.asarray(mstar_tagged),histtype='step',label="angmom tagging")                                                                                                                                                        
+        plt.hist(np.asarray(jstars),weights= np.asarray(stars['mass']),histtype='step',label="Hydro Sim")                                                                                                                                                             
+        plt.yscale('log')
     
-    return 
+        return 
 
 
 

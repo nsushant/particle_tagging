@@ -1,5 +1,5 @@
 
-import csv
+#import csv
 import os
 import pynbody
 import tangos
@@ -57,7 +57,7 @@ def rank_order_particles_by_BE(particles, hDMO,path_to_pe_file = None):
     #softening_length = pynbody.array.SimArray(np.ones(len(particles))*10.0, units='pc', sim=None)
 
     particles_r200 = particles[ particles["r"] < hDMO['r200c'] ]
-    particles_r200['vel']-= particles_r200['vel'].mean(axis=0)
+    #particles_r200['vel']-= particles_r200['vel'].mean(axis=0)
     #softening_length = pynbody.array.SimArray(np.ones(len(particles_r200))*10.0, units='pc',sim=None)
         
     '''
@@ -348,6 +348,7 @@ def BE_tag_over_full_sim(DMOsim,halonumber ,free_param_value = 0.01, PE_file=Non
                 hDMO['r200c']
             except:
                 print("Couldn't load in the R200 at timestep:" , i)
+                del DMOparticles 
                 continue
             
             print('the time is:',t_all[i])
@@ -568,7 +569,7 @@ def BE_tag_over_full_sim(DMOsim,halonumber ,free_param_value = 0.01, PE_file=Non
 
 
 
-def BE_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_value = 0.01, PE_file=None, pynbody_path  = None, particle_storage_filename=None, AHF_centers_file=None, mergers = True, df_tagged_particles=None,tag_typ='insitu'):
+def BE_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_value = 0.01, PE_file=None, pynbody_path  = None, particle_storage_filename=None, AHF_centers_filepath=None, mergers = True,main_halo_paths=None,acc_halo_path_tagged=None,df_tagged_particles=None,tag_typ='insitu'):
 
     '''
 
@@ -588,9 +589,12 @@ def BE_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_value = 
     dataframe with tagged particle masses at given times, redshifts and associated particle IDs  
     
     '''
-        
 
+    if (type(AHF_centers_filepath) == type(None)):
+        pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
 
+    else: 
+        pynbody.config["halo-class-priority"] = [pynbody.halo.ahf.AHFCatalogue]
     # name of DMO simulation
     DMOname = DMOsim.path
     
@@ -640,40 +644,58 @@ def BE_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_value = 
     insitu_only_particle_ids = np.array([])
 
     # if an AHF centering file is provided use the centers stroed within it
-    AHF_centers = pd.read_csv(str(AHF_centers_file)) if AHF_centers_file != None else None
+    AHF_centers = pd.read_csv(os.path.join(AHF_centers_filepath,str(DMOname)+".csv")) if type(AHF_centers_filepath) != type(None) else None
+    AHF_centers_acc = pd.read_csv(os.path.join(AHF_centers_filepath,str(DMOname)+"_accreted.csv")) if type(AHF_centers_filepath) != type(None) else None
+    
+    #if (tag_typ != "insitu"):
+    #    AHF_centers = AHF_centers_acc
 
     tagged_iords_to_write = np.array([])
     tagged_types_to_write = np.array([])
     tagged_mstars_to_write = np.array([])
     ts_to_write = np.array([])
     zs_to_write = np.array([])
-    acc_halo_path_tagged = np.array([])
+    
+    acc_halo_path_tagged = np.array([]) if (type(acc_halo_path_tagged) == type(None)) else acc_halo_path_tagged
+
+
+    if len(acc_halo_path_tagged) > 0:
+
+        halo_path = main_halo.calculate_for_progenitors('path()')
+        print("halopath:",halo_path)
+        main_halo_paths = np.array([])
+        main_halo_paths = np.append(main_halo_paths,halo_path[0][0])
+
+        if ( len(np.where(np.isin(main_halo_paths,acc_halo_path_tagged) == True)[0]) > 0):
+            
+            print("overlap at : ",main_halo_paths[np.where(np.isin(main_halo_paths,acc_halo_path_tagged) == True)])
+            print("for halo : ",acc_halo_path_tagged )
+            return df_tagged_particles,acc_halo_path_tagged
+
+    
+    halo_path = main_halo.calculate_for_progenitors('path()')
+    acc_halo_path_tagged = np.append(acc_halo_path_tagged,halo_path[0][0])
+
+
 
     if  type(df_tagged_particles) == type(None):    
         df_tagged_particles = pd.DataFrame({'iords':tagged_iords_to_write, 'mstar':tagged_mstars_to_write,'t':ts_to_write,'z':zs_to_write,'type':tagged_types_to_write})
+
+
     
-    PE_dir_contents = np.asarray(os.listdir(PE_file)) if type(PE_file) != type(None) else []
-    print(PE_dir_contents)
     # looping over all snapshots  
     for i in range(len(outputs)):
+
         gc.collect()
         
-        if len(PE_dir_contents)>0:
-            path_to_pe_file = os.path.join(PE_file,str(outputs[i])+'.csv')
-            check_exists = np.isin(path_to_pe_file,PE_dir_contents)
-            print('calculated potentials not found at path',path_to_pe_file)
-            if check_exists == True:
-                calculated_potential = pd.read_csv(path_to_pe_file)
-            else: 
-                calculated_potential = None
-                path_to_pe_file = None
-        else: 
-            path_to_pe_file = None
+        # If darklight makes no predictions we just skip all snaps 
         if len(t) == 0:
+            print("No darklight predictions")
             continue
+
         # was particle data loaded in (insitu) 
         decision=False
-
+        
         # was particle data loaded in (accreted) 
         decision2=False
         decl = False
@@ -689,7 +711,7 @@ def BE_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_value = 
         # time in gyr
         t_val = t_all[i]
 
-        # 't' is the darklight time array 
+        
         # idrz is thus the index of the mstar value calculated at the closest time to that of the snap
         idrz = np.argmin(abs(t - t_val))
 
@@ -733,6 +755,7 @@ def BE_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_value = 
                 print('loading in DMO particles')
                 
                 DMOparticles = pynbody.load(simfn)
+
                 # once the data from the snapshot has been loaded, .physical_units()
                 # converts all array’s units to be consistent with the distance, velocity, mass basis units specified.
                 DMOparticles.physical_units()
@@ -746,8 +769,8 @@ def BE_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_value = 
                 continue
    
             print('mass_select:',mass_select)
-            #print('total energy  ---------------------------------------------------->',DMOparticles.loadable_keys())
             
+
             try:
                 hDMO['r200c']
             except:
@@ -758,16 +781,31 @@ def BE_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_value = 
         
             subhalo_iords = np.array([])
             
-            if AHF_centers_file == None:
-                print(int(halonums[i])-1)
+            if AHF_centers_filepath == None:
+                
                 h = DMOparticles.halos()[int(halonums[i])-1]
 
-            elif AHF_centers_file != None:
+            elif AHF_centers_filepath != None:
                 
+                print("switched to AHF catalogue")
+
                 pynbody.config["halo-class-priority"] = [pynbody.halo.ahf.AHFCatalogue]
                 
-                AHF_crossref = AHF_centers[AHF_centers['snapshot'] == outputs[i]]['AHF halonum'].values[0]
-                
+                if (tag_typ == "insitu") : 
+
+                    AHF_crossref = AHF_centers[AHF_centers['snapshot'] == outputs[i]]['AHF halonum'].values[0]
+                    
+                if (tag_typ != "insitu") :
+                    
+                    AHF_halonum_acc = AHF_centers_acc[AHF_centers_acc["snapshot"] == outputs[i]] if type(AHF_centers_filepath) != type(None) else None
+                    
+                    print(AHF_halonum_acc,outputs[i],int(halonums[i]),tag_typ,AHF_centers[AHF_centers["snapshot"] == outputs[i]])
+                    
+                    HOP_halonum_acc = int(halonums[i])
+                    AHF_halonum_accreted = AHF_halonum_acc[AHF_halonum_acc["HOP halonum"] == HOP_halonum_acc]["AHF halonum"].values[0]
+
+                    AHF_crossref = AHF_halonum_accreted
+
                 h = DMOparticles.halos(halo_numbers="v1")[int(AHF_crossref)] 
                 
                 # the "children" are subhalos that need to be removed before centering on the main halo
@@ -786,33 +824,31 @@ def BE_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_value = 
 
             pynbody.analysis.halo.center(h)
 
-            pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
+            #pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
 
         
             try:                                                                                                                                                                                              
-                r200c_pyn = pynbody.analysis.halo.virial_radius(h.d, overden=200, r_max=None, rho_def='critical')                                                                                             
-                                                                                                                                                                                                              
-            except:                                                                                                                                                                                           
-                print('could not calculate R200c')                                                                                                                                                            
+                r200c_pyn = pynbody.analysis.halo.virial_radius(h.d, overden=200, r_max=None, rho_def='critical')                                                                                            
+            except:
+                print('could not calculate R200c')
+                del DMOparticles
+            
                 continue                                                                                                                                                                                      
-
             
             
+            DMOparticles_insitu_only = DMOparticles[sqrt(DMOparticles['pos'][:,0]**2 + DMOparticles['pos'][:,1]**2 + DMOparticles['pos'][:,2]**2) <= r200c_pyn ] 
             
-            DMOparticles_insitu_only = DMOparticles[sqrt(DMOparticles['pos'][:,0]**2 + DMOparticles['pos'][:,1]**2 + DMOparticles['pos'][:,2]**2) <= r200c_pyn ] #hDMO['r200c']]
-            
-            #DMOparticles_insitu_only = DMOparticles_insitu_only[np.logical_not(np.isin(DMOparticles_insitu_only['iord'],subhalo_iords))]
-            
-            particles_sorted_by_BE = rank_order_particles_by_BE( DMOparticles_insitu_only)
+            particles_sorted_by_BE = rank_order_particles_by_BE( DMOparticles_insitu_only,hDMO)
             
             if particles_sorted_by_BE.shape[0] == 0:
                 print("No sorted particles")
+                del DMOparticles_insitu_only 
+                del DMOparticles
                 continue
             
             array_to_write = assign_stars_to_particles(mass_select,particles_sorted_by_BE,float(free_param_value))
             
-            
-            print('writing '+str(tag_typ)+' particles to output file')
+            print('writing '+str(tag_typ)+' particles to dataframe')
             
             tagged_iords_to_write = np.append(tagged_iords_to_write,array_to_write[0])
             tagged_types_to_write = np.append(tagged_types_to_write,np.repeat(tag_typ,len(array_to_write[0])))
@@ -848,7 +884,6 @@ def BE_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_value = 
                 gc.collect()
                 print('halo:',hDM)
                 
-                
                 try:
                     prob_occupied = calculate_poccupied(hDM,2.5e7)
 
@@ -862,7 +897,7 @@ def BE_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_value = 
                     continue
                 try:
                     t_2,redshift_2,vsmooth_2,sfh_in2,mstar_in2,mstar_merging = DarkLight(hDM,nscatter=0,vthres=26.3,zre=4.,pre_method='fiducial',post_method='schechter',post_scatter_method='increasing',binning='3bins',timesteps='sim',mergers=True,DMO=True,occupation=2.5e7,fn_vmax=None)
-                    #,occupation=occupation_frac, pre_method='fiducial_with_turnover', post_scatter_method='flat', DMO=True)
+                    
                     
                 except Exception as e :
                     print(e)
@@ -877,26 +912,24 @@ def BE_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_value = 
                                                                                                                                     
                 tidx = np.where(np.asarray(DMOsim.timesteps[:]) ==  hDMO.timestep)[0][0]
                 acc_halo_path = hDM.calculate_for_progenitors('path()')
-                print('halonum merging:',hDM.calculate_for_progenitors('halo_number()'))
                 halonumber_hDM = hDM.calculate_for_progenitors('halo_number()')[0][0]
 
                 print('halonum merging:',halonumber_hDM)
                 
                 # if halo has not been tagged on before, we want to perform tagging over its full lifetime (upto the current snap)
                 if ( len(np.where(np.isin(acc_halo_path,acc_halo_path_tagged) == True)[0]) == 0 ):
-                    acc_halo_path_tagged = np.append(acc_halo_path_tagged,acc_halo_path[0][0])
+                    #acc_halo_path_tagged = np.append(acc_halo_path_tagged,acc_halo_path[0][0])
 
                     print('---recursion triggered -----')
-                    df_tagged_particles = BE_tag_over_full_sim_recursive(DMOsim,tidx,halonumber_hDM, free_param_value = float(free_param_value),pynbody_path = pynbody_path, df_tagged_particles=df_tagged_particles,tag_typ='accreted')
-                    
-                    #accreted_only_particle_ids = np.append(accreted_only_particle_ids,df_tagged_acc['iords'].values)
-                    
+                    df_tagged_particles,acc_halo_path_tagged = BE_tag_over_full_sim_recursive(DMOsim,tidx,halonumber_hDM, free_param_value = float(free_param_value),pynbody_path = pynbody_path, df_tagged_particles=df_tagged_particles,AHF_centers_filepath=AHF_centers_filepath,acc_halo_path_tagged = acc_halo_path_tagged,tag_typ='accreted')
+                                                            
                     print('---recursion end -----')
                                 
                     
                 else:
                     
                     if len(mstar_merging)==0:
+                        print("No Stars")
                         continue
     
                     mass_select_merge= mstar_merging[-1] - mstar_merging[-2]  if len(mstar_merging) > 1 else mstar_merging[-1]
@@ -923,8 +956,16 @@ def BE_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_value = 
                  
                     if int(mass_select_merge) > 0:
     
-                        try:
-                            h_merge = DMOparticles.halos()[int(hDM.calculate('halo_number()'))-1]
+                        try:                       
+                            AHF_halonum_acc = AHF_centers_acc[AHF_centers_acc["snapshot"] == outputs[i]] if type(AHF_centers_filepath) != type(None) else None
+                            if (type(AHF_centers_filepath) != type(None)):
+
+                                HOP_halonum_acc = int(hDM.calculate('halo_number()'))
+                                AHF_halonum_accreted = AHF_halonum_acc[AHF_halonum_acc["HOP halonum"] == HOP_halonum_acc]["AHF halonum"].values[0]
+                                h_merge = DMOparticles.halos(halo_numbers="v1")[AHF_halonum_accreted]
+                            else: 
+                                h_merge = DMOparticles.halos()[int(hDM.calculate('halo_number()'))-1]
+                            
                             pynbody.analysis.halo.center(h_merge,mode='hyb')
                             r200c_pyn_acc = pynbody.analysis.halo.virial_radius(h_merge.d, overden=200, r_max=None, rho_def='critical')
                         
@@ -934,15 +975,17 @@ def BE_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_value = 
                                                                                                                
                    
                         print('mass_select:',mass_select_merge)
-                        #print('total energy  ---------------------------------------------------->',DMOparticles.loadable_keys())
+                        
                         print('sorting accreted particles by TE')
-                        #print(rank_order_particles_by_te(z_val, DMOparticles, hDM,'accreted'), 'output')
+                        
                         DMOparticles_acc_only = DMOparticles[sqrt(DMOparticles['pos'][:,0]**2 + DMOparticles['pos'][:,1]**2 + DMOparticles['pos'][:,2]**2) <= r200c_pyn_acc] 
     
                                                 
-                        try:
+                        
+                        if "iord" in DMOparticles_acc_only.loadable_keys(): 
                             accreted_particles_sorted_by_BE = rank_order_particles_by_BE(DMOparticles_acc_only)
-                        except:
+                        else:
+                            del DMOparticles_acc_only
                             continue
                         
             
@@ -957,8 +1000,7 @@ def BE_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_value = 
                         ts_to_write = np.append(ts_to_write,np.repeat(t_all[i],len(array_to_write_accreted[0])))
                         zs_to_write = np.append(zs_to_write,np.repeat(red_all[i],len(array_to_write_accreted[0])))
     
-            
-                        #accreted_only_particle_ids = np.append(accreted_only_particle_ids,np.asarray(array_to_write_accreted[0]))
+                
                         row_to_write_acc = pd.DataFrame({'iords':array_to_write_accreted[0], 'mstar':array_to_write_accreted[1],'t':np.repeat(t_all[i],len(array_to_write_accreted[0])),'z':np.repeat(red_all[i],len(array_to_write_accreted[0])) , 'type':np.repeat('accreted',len(array_to_write_accreted[0])) })
                         
                         df_tagged_particles = pd.concat([df_tagged_particles,row_to_write_acc],ignore_index=True)            
@@ -979,14 +1021,13 @@ def BE_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_value = 
         if particle_storage_filename != None:
             df_tagged_particles.to_csv(particle_storage_filename)
             
-    return df_tagged_particles
+    return df_tagged_particles,acc_halo_path_tagged
 
 
 
 
 
 '''
-
 #function deprecated, use function from particle_tagging.edge.angular_momentum_tagging
 
 def angmom_calculate_reffs_over_full_sim(DMOsim, data_particles_tagged, pynbody_path  = None , AHF_centers_file = None):

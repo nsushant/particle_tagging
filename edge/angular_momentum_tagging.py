@@ -30,7 +30,9 @@ from particle_tagging.edge.utils import *
 from particle_tagging.analysis.calculate import * 
 
 
-def get_child_iords(halo,halo_catalog,DMO_state='fiducial'):
+def get_child_iords(halo,dmo_particles,DMO_state='fiducial'):
+
+    pynbody.config["halo-class-priority"] = [pynbody.halo.ahf.AHFCatalogue]
 
     '''
     
@@ -39,9 +41,16 @@ def get_child_iords(halo,halo_catalog,DMO_state='fiducial'):
     of particles belonging to 'child' or sub-halo of the main halo. 
     
     '''
+    halo_catalog = dmo_particles.halos(halo_numbers="v1")
+
+    print(halo_catalog)
+    print(halo_catalog.keys())
+
     children_dm = np.array([])
 
     children_st = np.array([])
+    
+    children_gas = np.array([])
 
     sub_halonums = np.array([])
 
@@ -66,21 +75,34 @@ def get_child_iords(halo,halo_catalog,DMO_state='fiducial'):
                 if (len(halo_catalog[child].st['iord']) > 0 ):
 
                     children_st = np.append(children_st,halo_catalog[child].st['iord'])
+                    '''
+                    try: 
+                        children_gas = np.append(children_gas,halo_catalog[child].g['iord'])
+                    except:
+                        print("No gas")
+                        pass
+                    '''
+            #if (np.isin('children',list(halo_catalog[child].properties.keys())) == True) :
 
-            if (np.isin('children',list(halo_catalog[child].properties.keys())) == True) :
+              #  dm_2nd_gen,st_2nd_gen,sub_halonums_2nd_gen = get_child_iords(halo_catalog[child],halo_catalog,DMO_state)
 
-                dm_2nd_gen,st_2nd_gen,sub_halonums_2nd_gen = get_child_iords(halo_catalog[child],halo_catalog,DMO_state)
-
-                children_dm = np.append(children_dm,dm_2nd_gen)
-                children_st = np.append(children_st,st_2nd_gen)
-                sub_halonums = np.append(sub_halonums,sub_halonums_2nd_gen)
+              #  children_dm = np.append(children_dm,dm_2nd_gen)
+              #  children_st = np.append(children_st,st_2nd_gen)
+              #  sub_halonums = np.append(sub_halonums,sub_halonums_2nd_gen)
             #else:                                                                                                                                                                                                                                             
-            #    print("there were no star or dark-matter iord arrays")                                                                                                                                                                                        
-
+            #    print("there were no star or dark-matter iord arrays")                                                                                                       '''                                               
+                                              
+        
     #else:                                                                                                                                                                                                                                                     
-    #    print("did not find children in halo properties list")                                                                                                                                                                                                
+    #    print("did not find children in halo properties list")                                                                                                                                                               
+                                 
 
     return children_dm,children_st,sub_halonums
+
+
+
+
+
 
 
 
@@ -261,7 +283,7 @@ def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_fi
 
     '''
      
-    path_AHF_halonums = "AHF_halonums/DMO/"+sim_name+".csv" if AHF_centers_supplied==True else "" 
+    path_AHF_halonums = "AHF_halonums/DMO/"+sim_name+"_rec.csv" if AHF_centers_supplied==True else "" 
     
     AHF_halonums = None
 
@@ -335,7 +357,7 @@ def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_fi
             if physics == 'edge1':
 
                 if halonum=='383':
-                    pynbody_path = '/scratch/dp191/shared/CHIMERA/'
+                    pynbody_path = '/scratch/dp101/shared/EDGE/'
                     #.format(simname)
                 else:
                     pynbody_path = '/scratch/dp101/shared/EDGE/'
@@ -452,8 +474,11 @@ def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_fi
             # once the data from the snapshot has been loaded, .physical_units()
             # converts all array’s units to be consistent with the distance, velocity, mass basis units specified.
             #DMOparticles.physical_units()
-
             
+            children_dm = np.array([])
+
+            children_st = np.array([])
+
             try:
                 #if AHF_centers_supplied==False:
                     
@@ -464,46 +489,56 @@ def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_fi
 
                     halonum_snap = AHF_halonums[AHF_halonums["snapshot"] == str(outputs[i])]["AHF halonum"].values
                         
-                    h = DMOparticles.halos(halo_numbers='v1')[int(halonum_snap)]                        
-                        
+                    print("Halonum in snap --> ",halonum_snap)
+
+                    h = DMOparticles.halos(halo_numbers='v1')[int(halonum_snap)]
+                    halo_catalog = DMOparticles.halos(halo_numbers="v1")
+                    print(halo_catalog.keys())
+                    print("main halo done")
+                    DMO_state = "DMO"
+                    children_dm = np.array([])
+
+                    children_st = np.array([])
+
+                    sub_halonums = np.array([])
+
+                    if (np.isin('children',list(h.properties.keys())) == True) :
+
+                        children_halonums = h.properties['children']
+
+                        sub_halonums = np.append(sub_halonums,children_halonums)
+
+                        #print(children_halonums)                                                                                                                                                                               
+
+                        for child in children_halonums:
+
+                            if (len(halo_catalog[child].dm['iord']) > 0):
+
+                                children_dm = np.append(children_dm,halo_catalog[child].dm['iord'])
+
+
+
+                            if DMO_state == 'fiducial':
+
+                                if (len(halo_catalog[child].st['iord']) > 0 ):
+
+                                    children_st = np.append(children_st,halo_catalog[child].st['iord'])
+
+                
                 else:
                     print("confirmed switch to HOP")
                     pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
                     h = DMOparticles.halos()[int(halonums[i])-1]
-    
-                '''        
-                elif AHF_centers_supplied == True:
-                    pynbody.config["halo-class-priority"] = [pynbody.halo.ahf.AHFCatalogue]
-                    
-                    
-                    AHF_crossref = AHF_centers[AHF_centers['i'] == i]['AHF catalogue id'].values[0]
-                        
-                    h = DMOparticles.halos()[int(AHF_crossref)] 
-                            
-                    children_ahf = AHF_centers[AHF_centers['i'] == i]['children'].values[0]
-                            
-                    child_str_l = children_ahf[0][1:-1].split()
-
-                    children_ahf_int = list(map(float, child_str_l))
-                    
-                    
-                    halo_catalogue = DMOparticles.halos()
-                    
-                    subhalo_iords = np.array([])
-                        
-                    for i in children_ahf_int:
-                                
-                        subhalo_iords = np.append(subhalo_iords,halo_catalogue[int(i)].dm['iord'])
-                                                                                                                                                 
-                    h = h.dm[np.logical_not(np.isin(h.dm['iord'],subhalo_iords))] if len(subhalo_iords) >0 else h
-                ''' 
+                    halo_catalog = DMOparticles.halos()
                 
-                children_dm,children_st,sub_halonums = get_child_iords(h.dm,DMOparticles.halos(halo_numbers='v1'),DMO_state='DMO')
+
+                #pynbody.config["halo-class-priority"] = [pynbody.halo.ahf.AHFCatalogue]
+                #children_dm,children_st,sub_halonums = get_child_iords(h.dm,DMOparticles,DMO_state='DMO')
                 
                 DMOparticles.physical_units()    
                 pynbody.analysis.halo.center(h.dm)
-                #pynbody.analysis.angmom.faceon(h.dm)
-
+                #pynbody.analysis.angmom.faceon(h.dm[h.dm['r']<5])
+                
             except Exception as e:
                 print('centering data unavailable',e)
                 continue
@@ -518,16 +553,19 @@ def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_fi
             
         
 
-            DMOparticles = DMOparticles[sqrt(DMOparticles['pos'][:,0]**2 + DMOparticles['pos'][:,1]**2 + DMOparticles['pos'][:,2]**2) <= r200c_pyn ]        
-            
+            DMOparticles = DMOparticles.dm[sqrt(DMOparticles.dm['pos'][:,0]**2 + DMOparticles.dm['pos'][:,1]**2 + DMOparticles.dm['pos'][:,2]**2) <= r200c_pyn ]        
+
             DMOparticles_only_insitu = DMOparticles.dm[np.logical_not(np.isin(DMOparticles.dm['iord'],children_dm))]
+            
+            #particle_selection_reff_tot = DMOparticles.dm[np.isin(DMOparticles.dm['iord'],selected_iords_tot)] if len(selected_iords_tot)>0 else []
 
-            particle_selection_reff_tot = DMOparticles.dm[np.isin(DMOparticles.dm['iord'],selected_iords_tot)] if len(selected_iords_tot)>0 else []
-
+            particle_selection_reff_tot = DMOparticles_only_insitu[np.isin(DMOparticles_only_insitu['iord'],selected_iords_tot)] if len(selected_iords_tot)>0 else [] 
             print("length of particle_selection_reff_tot:",len(particle_selection_reff_tot))
             
             particles_only_insitu = DMOparticles_only_insitu[np.isin(DMOparticles_only_insitu['iord'],selected_iords_insitu_only)] if len(DMOparticles_only_insitu) > 0 else []
             
+            
+
             #print("length of particles_only_insitu",particles_only_insitu)
 
             #print('m200 value---->',hDMO['M200c'])
@@ -537,18 +575,24 @@ def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_fi
                 continue
             else:
 
-        
+                
                 masses = [ data_grouped.loc[n]['mstar'] for n in particle_selection_reff_tot['iord']]
-
+                                
+                
                 masses_insitu = [data_grouped.loc[iord]['mstar'] for iord in particles_only_insitu['iord']]
                     
                 #cen_stars = calc_3D_cm(particles_only_insitu,masses_insitu)
                 
                 if len(particles_only_insitu) != 0:
-                    cen_stars = calc_3D_cm(particles_only_insitu,masses_insitu)
+                    pynbody.analysis.halo.center(particles_only_insitu)
+                    
+                else:
+                    particle_selection_reff_tot4=particle_selection_reff_tot
+                    #[particle_selection_reff_tot['r'] < 4.0]
+                    masses4 = [ data_grouped.loc[n]['mstar'] for n in particle_selection_reff_tot4['iord']]
+                    cen_stars = calc_3D_cm(particle_selection_reff_tot4,masses4)
                     particle_selection_reff_tot['pos'] -= cen_stars
-                
-
+                    
                 # new cutoff calc begins 
                 distances = np.sqrt(particle_selection_reff_tot['x']**2+particle_selection_reff_tot['y']**2) 
                 #+ particle_selection_reff_tot['z']**2)                
@@ -581,9 +625,9 @@ def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_fi
                 kravtsov = hDMO['r200c']*0.02
                 kravtsov_r = np.append(kravtsov_r,kravtsov)
                 
-                if len(particles_only_insitu) != 0:
-                    particle_selection_reff_tot['pos'] += cen_stars
-
+                #if len(particles_only_insitu) != 0:
+                #    particle_selection_reff_tot['pos'] += cen_stars
+                
                 print('halfmass radius:',R_half)
                 print('Kravtsov_radius:',kravtsov)
                 
@@ -600,3 +644,4 @@ def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_fi
         print('wrote', reffs_fname)
         
     return df_reff
+

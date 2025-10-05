@@ -1,6 +1,5 @@
 
-#import csv
-import tqdm
+import csv
 import os
 import pynbody
 import tangos
@@ -411,7 +410,11 @@ def angmom_tag_over_full_sim(DMOsim, halonumber = 1 ,free_param_value = 0.01, py
 
                 
                 try:
-                    t_2,redshift_2,vsmooth_2,sfh_in2,mstar_in2,mstar_merging = DarkLight(hDM,nscatter=0,vthres=26.3,zre=4.,pre_method='fiducial',post_method='schechter',post_scatter_method='increasing',binning='3bins',timesteps='sim',mergers=True,DMO=True,occupation=2.5e7,fn_vmax=None)
+                    t_2,redshift_2,vsmooth_2,sfh_in2,mstar_in2,mstar_merging = DarkLight(hDM,nscatter=0,vthres=26.3,zre=4.,pre_method='fiducial',post_method='schechter',post_scatter_method='increasing',binning='3bins',timesteps='sim',mergers=True,DMO=False,occupation=2.5e7,fn_vmax=None)
+                    
+
+                    
+
 
                     #occupation='edge1', pre_method='fiducial_with_turnover', post_scatter_method='flat', DMO=True,mergers = True)
                     #DarkLight(hDM,DMO=True)#,poccupied=occupation_frac,mergers=True)
@@ -484,7 +487,6 @@ def angmom_tag_over_full_sim(DMOsim, halonumber = 1 ,free_param_value = 0.01, py
                     array_to_write_accreted = assign_stars_to_particles(mass_select_merge,accreted_particles_sorted_by_angmom,float(free_param_value))
                     
                     
-
                     tagged_iords_to_write = np.append(tagged_iords_to_write,array_to_write_accreted[0])
                     tagged_types_to_write = np.append(tagged_types_to_write,np.repeat('accreted',len(array_to_write_accreted[0])))
                     tagged_mstars_to_write = np.append(tagged_mstars_to_write,array_to_write_accreted[1])
@@ -513,7 +515,32 @@ def angmom_tag_over_full_sim(DMOsim, halonumber = 1 ,free_param_value = 0.01, py
     return df_tagged_particles
 
 
-def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_value = 0.001,free_param_value_acc = None ,pynbody_path  = None, particle_storage_filename=None, AHF_centers_filepath=None, mergers = True, df_tagged_particles=None ,tag_typ='insitu',acc_halo_path_tagged=None,main_halo_paths=None):
+
+def integrate_sfr(sfr,tend):
+
+    #print("length of sfr:",len(sfr))                                                                                                                  
+
+    mstar_per_gyr = sfr*(10**9)
+
+    #print("length of sfr:",len(mstar_per_gyr))                                                                                                        
+
+    mstar = mstar_per_gyr*0.02
+
+    #print("length of:",len(mstar))                                                                                                                    
+    time_bins = np.arange(0,tend,0.02)
+
+    t_array = time_bins[1:]
+
+    mstar_array = np.cumsum(mstar)
+    #print("length of:",len(mstar_array))                                                                                                              
+    return mstar_array,t_array
+
+
+
+
+
+
+def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_value = 0.001,free_param_value_acc = None ,pynbody_path  = None, particle_storage_filename=None, AHF_centers_filepath=None, mergers = True, df_tagged_particles=None ,tag_typ='insitu',acc_halo_path_tagged=None,main_halo_paths=None,mode="darklight"):
 
     '''
 
@@ -565,8 +592,13 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
     outputs.sort()
                                     
     # Get stellar masses at each redshift using darklight for insitu tagging (mergers = False, excludes accreted mass)
+    
+    if mode == "darklight":
+        t,redshift,vsmooth,sfh_insitu,mstar_s_insitu,mstar_total = DarkLight(main_halo,nscatter=0,vthres=26.3,zre=4.,pre_method='fiducial',post_method='schechter',post_scatter_method='increasing',binning='3bins',timesteps='sim',mergers=False,DMO=False,occupation=2.5e7,fn_vmax=None)
 
-    t,redshift,vsmooth,sfh_insitu,mstar_s_insitu,mstar_total = DarkLight(main_halo,nscatter=0,vthres=26.3,zre=4.,pre_method='fiducial',post_method='schechter',post_scatter_method='increasing',binning='3bins',timesteps='sim',mergers=False,DMO=True,occupation=2.5e7,fn_vmax=None)
+    else: 
+        mstar_s_insitu,t = integrate_sfr(main_halo["SFR_histogram"],t_all[-1])
+        redshift = main_halo.calculate_for_progenitors('z()')[0][::-1]                                                                                     
 
     # calculate when the mergers took place and grab all the tangos halo objects involved in the merger (zmerge = merger redshift, hmerge = merging halo objects,qmerge = merger ratio)
     # these are based on the HOP catalogue by default 
@@ -592,8 +624,8 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
     insitu_only_particle_ids = np.array([])
 
     # if an AHF centering file is provided use the centers stroed within it
-    AHF_centers = pd.read_csv(os.path.join(AHF_centers_filepath,str(DMOname)+"_rec.csv")) if type(AHF_centers_filepath) != type(None) else None
-    AHF_centers_acc = pd.read_csv(os.path.join(AHF_centers_filepath,str(DMOname)+"_accreted_rec.csv")) if type(AHF_centers_filepath) != type(None) else None
+    AHF_centers = pd.read_csv(os.path.join(AHF_centers_filepath,str(DMOname)+".csv")) if type(AHF_centers_filepath) != type(None) else None
+    AHF_centers_acc = pd.read_csv(os.path.join(AHF_centers_filepath,str(DMOname)+"_accreted.csv")) if type(AHF_centers_filepath) != type(None) else None
     
     tagged_iords_to_write = np.array([])
     tagged_types_to_write = np.array([])
@@ -604,11 +636,9 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
     
     # record of tagged objects for the recursive run where the loop goes through all merging objects 
     acc_halo_path_tagged = np.array([]) if (type(acc_halo_path_tagged) == type(None)) else acc_halo_path_tagged 
-    
-    if  type(df_tagged_particles) == type(None):    
-        df_tagged_particles = pd.DataFrame({'iords':tagged_iords_to_write, 'mstar':tagged_mstars_to_write,'t':ts_to_write,'z':zs_to_write,'type':tagged_types_to_write})
-    
-    
+
+
+
     if len(acc_halo_path_tagged) > 0:
 
         halo_path = main_halo.calculate_for_progenitors('path()')
@@ -627,14 +657,17 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
     acc_halo_path_tagged = np.append(acc_halo_path_tagged,halo_path[0][0])
 
 
+
+    if  type(df_tagged_particles) == type(None):    
+        df_tagged_particles = pd.DataFrame({'iords':tagged_iords_to_write, 'mstar':tagged_mstars_to_write,'t':ts_to_write,'z':zs_to_write,'type':tagged_types_to_write})
+    
+    
+
     # looping over all snapshots  
     for i in range(len(outputs)):
-
         gc.collect()
-
         if len(t) == 0:
             continue
-
         # was particle data loaded in (insitu) 
         decision=False
 
@@ -734,22 +767,8 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
                 # if AHF centers are available then the priority is changed to the AHF catalogue (Which is 1 indexed)
                 pynbody.config["halo-class-priority"] = [pynbody.halo.ahf.AHFCatalogue]
                 
-                #AHF_crossref = AHF_centers[AHF_centers['snapshot'] == outputs[i]]['AHF halonum'].values[0]
+                AHF_crossref = AHF_centers[AHF_centers['snapshot'] == outputs[i]]['AHF halonum'].values[0]
                 
-                if (tag_typ == "insitu") :
-
-                    AHF_crossref = AHF_centers[AHF_centers['snapshot'] == outputs[i]]['AHF halonum'].values[0]
-
-                if (tag_typ != "insitu"):
-
-                    AHF_halonum_acc = AHF_centers_acc[AHF_centers_acc["snapshot"] == outputs[i]] if type(AHF_centers_filepath) != type(None) else None
-                    HOP_halonum_acc = int(halonums[i])
-                    AHF_halonum_accreted = AHF_halonum_acc[AHF_halonum_acc["HOP halonum"] == HOP_halonum_acc]["AHF halonum"].values[0]
-
-                    AHF_crossref = AHF_halonum_accreted
-
-
-
                 h = DMOparticles.halos(halo_numbers="v1")[int(AHF_crossref)] 
                 #h = h.dm
                 # the "children" are subhalos that need to be removed before centering on the main halo
@@ -768,7 +787,7 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
             
 
             pynbody.analysis.halo.center(h.dm)
-            #pynbody.analysis.angmom.faceon(h.dm[h.dm['r']<5])
+            pynbody.analysis.angmom.faceon(h.dm[h.dm['r']<5])
             #pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
         
             try:
@@ -777,14 +796,14 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
                 print('could not calculate R200c')                                                                                                                                                            
                 continue                                                                                                                                                                                      
             
-            DMOparticles_insitu_only = DMOparticles[sqrt(DMOparticles['pos'][:,0]**2 + DMOparticles['pos'][:,1]**2 + DMOparticles['pos'][:,2]**2) <= r200c_pyn ] 
+            DMOparticles_insitu_only = DMOparticles.dm[sqrt(DMOparticles.dm['pos'][:,0]**2 + DMOparticles.dm['pos'][:,1]**2 + DMOparticles.dm['pos'][:,2]**2) <= r200c_pyn ] #hDMO['r200c']]
         
             DMOparticles_insitu_only = DMOparticles_insitu_only.dm
-
             #uncomment to remove subhalos from tagging insitu 
+
             ####DMOparticles_insitu_only = DMOparticles_insitu_only[np.logical_not(np.isin(DMOparticles_insitu_only['iord'],subhalo_iords))]
             
-            particles_sorted_by_angmom = rank_order_particles_by_angmom( DMOparticles_insitu_only)
+            particles_sorted_by_angmom = rank_order_particles_by_angmom( DMOparticles_insitu_only.dm)
             
             if particles_sorted_by_angmom.shape[0] == 0:
                 continue
@@ -840,8 +859,16 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
                     print('Skipped')
                     continue
                 try:
-                    t_2,redshift_2,vsmooth_2,sfh_in2,mstar_in2,mstar_merging = DarkLight(hDM,nscatter=0,vthres=26.3,zre=4.,pre_method='fiducial',post_method='schechter',post_scatter_method='increasing',binning='3bins',timesteps='sim',mergers=True,DMO=True,occupation=2.5e7,fn_vmax=None)
-
+                    if mode == 'darklight':
+                        t_2,redshift_2,vsmooth_2,sfh_in2,mstar_in2,mstar_merging = DarkLight(hDM,nscatter=0,vthres=26.3,zre=4.,pre_method='fiducial',post_method='schechter',post_scatter_method='increasing',binning='3bins',timesteps='sim',mergers=True,DMO=False,occupation=2.5e7,fn_vmax=None)
+                    
+                    else:
+                        t_2= hDM.calculate_for_progenitors("t()")[0][::-1]                                                                                 
+                        redshift_2= hDM.calculate_for_progenitors("z()")[0][::-1]                                                                          
+                        mstar_in2 = hDM.calculate_for_progenitors("M200c_stars")[0][::-1]                                                                  
+                        mstar_merging = mstar_in2                                                                                                         
+                        #mstar_in2,t_2 = integrate_sfr(hDM["SFR_histogram"],t_all[-1])
+                        
                     #occupation=occupation_frac, pre_method='fiducial_with_turnover', post_scatter_method='flat',DMO=True,mergers = True)
                     #occupation=2.5e7, pre_method='fiducial',post_method='fiducial',post_scatter_method='flat', DMO=True, mergers=True)
                     #occupation=2.5e7, pre_method='fiducial', post_method='fiducial', post_scatter_method='flat'
@@ -860,7 +887,9 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
                                                                                                                                     
                 tidx = np.where(np.asarray(DMOsim.timesteps[:]) ==  hDMO.timestep)[0][0]
                 acc_halo_path = hDM.calculate_for_progenitors('path()')
+                print('halonum merging:',hDM.calculate_for_progenitors('halo_number()'))
                 halonumber_hDM = hDM.calculate_for_progenitors('halo_number()')[0][0]
+
                 print('halonum merging:',halonumber_hDM)
                 
 
@@ -872,31 +901,32 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
                 # if halo has not been tagged on before, we want to perform tagging over its full lifetime (upto the current snap)
                 if ( len(np.where(np.isin(acc_halo_path,acc_halo_path_tagged) == True)[0]) == 0 ):
                     
-                    
+                    ######################change
                     print('---recursion triggered -----')
+                    df_tagged_particles,acc_halo_path_tagged = angmom_tag_over_full_sim_recursive(DMOsim,tidx,halonumber_hDM, free_param_value = float(free_param_value_acc),free_param_value_acc = float(free_param_value_acc),pynbody_path = pynbody_path, df_tagged_particles=df_tagged_particles,tag_typ='accreted',acc_halo_path_tagged=acc_halo_path_tagged,main_halo_paths=main_halo_paths)
+                    ##################
                     
-
-                    df_tagged_particles,acc_halo_path_tagged = angmom_tag_over_full_sim_recursive(DMOsim,tidx,halonumber_hDM, free_param_value = float(free_param_value_acc),free_param_value_acc = float(free_param_value_acc),pynbody_path = pynbody_path, df_tagged_particles=df_tagged_particles,tag_typ='accreted',AHF_centers_filepath=AHF_centers_filepath,acc_halo_path_tagged=acc_halo_path_tagged)
                     
-                    
-        
                     print('---recursion end -----')
                                 
                     
                 else:
-                    
+                    #HOP halonum,AHF halonum,snapshot
                     if len(mstar_merging)==0:
                         continue
     
                     mass_select_merge= mstar_merging[-1] - mstar_merging[-2]  if len(mstar_merging) > 1 else mstar_merging[-1]
     
-                    
+                    print(mass_select_merge)
                     if int(mass_select_merge)<1:
+                        
                         continue
                     
                     simfn = join(pynbody_path, outputs[i])
                     
-                    
+                    #if type(AHF_centers_filepath) != type(None):
+                     #   pynbody.config["halo-class-priority"] = [pynbody.halo.ahf.AHFCatalogue]
+
 
                     if float(mass_select_merge) >0 and decision2==True:
                         # try to load in the data from this snapshot
@@ -909,48 +939,43 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
                             DMOparticles.physical_units()
                             #DMOparticles = DMOparticles.d
                             print('loaded data in mergers')
-                        
                         # where this data isn't available, notify the user.
                         except:
                             print('--> DMO particle data exists but failed to read it, skipping!')
                             continue
-                        
                         decision2 = False
                         decl=True
-                    
-                    
+
                     
                     if int(mass_select_merge) > 0:
     
                         try:
 
                             HOP_halonum_acc = int(hDM.calculate('halo_number()'))
-                            
+
                             if (type(AHF_centers_filepath) != type(None)):
                                 AHF_halonum_acc = AHF_centers_acc[AHF_centers_acc["snapshot"] == outputs[i]]
                                 AHF_halonum_accreted = AHF_halonum_acc[AHF_halonum_acc["HOP halonum"] == HOP_halonum_acc]["AHF halonum"].values[0]
                                 h_merge = DMOparticles.halos(halo_numbers="v1")[AHF_halonum_accreted]
 
+                            else:
 
-                            else: 
-                                
                                 h_merge =  DMOparticles.halos()[HOP_halonum_acc - 1]
-                            
+
                             pynbody.analysis.halo.center(h_merge,mode='hyb')
-                            
+
                             r200c_pyn_acc = pynbody.analysis.halo.virial_radius(h_merge.d, overden=200, r_max=None, rho_def='critical')
-                        
+
                         except Exception as ex:
                             print('centering data unavailable, skipping',ex)
                             continue
-                                                                                                               
-                   
+
                         print('mass_select:',mass_select_merge)
                         #print('total energy  ---------------------------------------------------->',DMOparticles.loadable_keys())
                         print('sorting accreted particles by Angmom.')
                         #print(rank_order_particles_by_te(z_val, DMOparticles, hDM,'accreted'), 'output')
         
-                        DMOparticles_acc_only = DMOparticles[sqrt(DMOparticles['pos'][:,0]**2 + DMOparticles['pos'][:,1]**2 + DMOparticles['pos'][:,2]**2) <= r200c_pyn_acc] 
+                        DMOparticles_acc_only = DMOparticles.d[sqrt(DMOparticles.d['pos'][:,0]**2 + DMOparticles.d['pos'][:,1]**2 + DMOparticles.d['pos'][:,2]**2) <= r200c_pyn_acc] 
                                                     
                         try:
                             accreted_particles_sorted_by_angmom = rank_order_particles_by_angmom(DMOparticles_acc_only.dm)
