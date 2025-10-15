@@ -1,6 +1,4 @@
 
-#import csv
-import tqdm
 import os
 import pynbody
 import tangos
@@ -32,9 +30,7 @@ def rank_order_particles_by_angmom(particles):
     '''
     Inputs: 
 
-    DMOparticles - Particle data (angular momenta and positions) 
-    hDMO - Tangos halo object for the main halo
-    
+    particles - Particle data from pynbody
     
     Returns: 
     
@@ -43,17 +39,14 @@ def rank_order_particles_by_angmom(particles):
     '''
     
     print('this is how many DMOparticles were passed',len(particles))
-    
 
-    #particles_in_r200 = DMOparticles[sqrt(DMOparticles['pos'][:,0]**2 + DMOparticles['pos'][:,1]**2 + DMOparticles['pos'][:,2]**2) <= hDMO['r200c']]
-    
-    softening_length = pynbody.array.SimArray(np.ones(len(particles))*10.0, units='pc', sim=None)
-    
+    # makes the array 1D via sqrt(jx^2 + jy^2 +jz^2)
     angular_momenta = get_dist(particles['j'])
 
     #values arranged in ascending order
     sorted_indicies = np.argsort(angular_momenta.flatten())
 
+    # particle ids sorted by angular momentum
     particles_ordered_by_angmom = np.asarray(particles['iord'])[sorted_indicies] if sorted_indicies.shape[0] != 0 else np.array([]) 
    
     return np.asarray(particles_ordered_by_angmom)
@@ -80,28 +73,23 @@ def assign_stars_to_particles(snapshot_stellar_mass,particles_sorted_by_angmom,t
    
     '''
 
+    # getting the 'tagging fraction' number of low angular momentum particles 
     size_of_tagging_fraction = int(particles_sorted_by_angmom.shape[0]*tagging_fraction)
     
     particles_in_tagging_fraction = particles_sorted_by_angmom[:size_of_tagging_fraction]
     
     #dividing stellar mass evenly over all the particles in the most bound fraction 
-
+    
     print('assigning stellar mass')
-    
+
+    # stellar mass to be assigned per particle
     stellar_mass_assigned = float(snapshot_stellar_mass/len(list(particles_in_tagging_fraction))) if len(list(particles_in_tagging_fraction))>0 else 0
-    
-    #check if particles have been selected before 
-    
-    
-    #if not selected previously, add to array
-
-    
+        
     array_iords = particles_in_tagging_fraction
-
-    #Uncomment this for old behaviour (where the mass per particle is the total mass tagged upto that point)
-    #array_masses = np.append(selected_particles[1][idxs_previously_selected],np.repeat(stellar_mass_assigned,how_many_not_previously_selected))
-    array_masses = np.repeat(stellar_mass_assigned,len(array_iords)) 
     
+    array_masses = np.repeat(stellar_mass_assigned,len(array_iords)) 
+
+    # array that contains (particle ids, mstar contributions) for this snap of tagging
     updates_to_arrays = np.array([array_iords,array_masses])
     
     
@@ -129,6 +117,7 @@ def tag(DMOparticles, hDMO, snapshot_stellar_mass,free_param_value = 0.01, previ
     
     
     '''
+    
     particles_ordered_by_angmom = rank_order_particles_by_angmom(DMOparticles, hDMO)
 
     return assign_stars_to_particles(snapshot_stellar_mass,particles_sorted_by_angmom, free_param_value)
@@ -155,11 +144,10 @@ def angmom_tag_over_full_sim(DMOsim, halonumber = 1 ,free_param_value = 0.01, py
     
     '''
     
-    # path to particle data 
+    # Name of simulation
     DMOname = DMOsim.path
-    # load in the DMO sim to get particle data and get accurate halonums for the main halo in each snapshot
-    # load_tangos_data is a part of the 'utils.py' file in the tagging dir, it loads in the tangos database 'DMOsim' and returns the main halos tangos object, outputs and halonums at all timesteps
-    
+
+    # getting the tangos object associated with requested halo at last snap
     main_halo = DMOsim.timesteps[-1].halos[int(halonumber) - 1]
 
     # halonums for all snapshots 
@@ -168,16 +156,15 @@ def angmom_tag_over_full_sim(DMOsim, halonumber = 1 ,free_param_value = 0.01, py
     # time and redshift of each snapshot 
     t_all = main_halo.calculate_for_progenitors('t()')[0][::-1]
     red_all = main_halo.calculate_for_progenitors('z()')[0][::-1]
-    
+
+    # fetching the correct output names (outputs that have associated tangos databases)
     outputs_all = np.array([DMOsim.timesteps[i].__dict__['extension'] for i in range(len(DMOsim.timesteps))])
     times_tangos = np.array([ DMOsim.timesteps[i].__dict__['time_gyr'] for i in range(len(DMOsim.timesteps)) ])
-    
     outputs = outputs_all[np.isin(times_tangos, t_all)]
-
     outputs.sort()
 
     # Get stellar masses at each redshift using darklight for insitu tagging (mergers = False excludes accreted mass)
-    t,redshift,vsmooth,sfh_insitu,mstar_s_insitu,mstar_total =DarkLight(main_halo,nscatter=0,vthres=26.3,zre=4.,pre_method='fiducial',post_method='schechter',post_scatter_method='increasing',binning='3bins',timesteps='sim',mergers=True,DMO=True,occupation=2.5e7,fn_vmax=None)
+    t,redshift,vsmooth,sfh_insitu,mstar_s_insitu,mstar_total =DarkLight(main_halo,nscatter=0,vthres=26.3,zre=4.,pre_method='fiducial',post_method='schechter',post_scatter_method='increasing',binning='3bins',timesteps='sim',mergers=False,DMO=True,occupation=2.5e7,fn_vmax=None)
 
     #calculate when the mergers took place and grab all the tangos halo objects involved in the merger (zmerge = merger redshift, hmerge = merging halo objects,qmerge = merger ratio)
     zmerge, qmerge, hmerge = get_mergers_of_major_progenitor(main_halo)
@@ -200,15 +187,17 @@ def angmom_tag_over_full_sim(DMOsim, halonumber = 1 ,free_param_value = 0.01, py
     # total stellar mass selected 
     mstar_selected_total = 0
 
-    accreted_only_particle_ids = np.array([])
-    insitu_only_particle_ids = np.array([])
-
-    # if an AHF centering file is provided use the centers stroed within it
+    
+    # if an AHF centering file is provided use the centers stored within it
     AHF_centers = pd.read_csv(str(AHF_centers_file)) if AHF_centers_file != None else None
 
-    tagged_iords_to_write = np.array([])
-    tagged_types_to_write = np.array([])
+    accreted_only_particle_ids = np.array([])
+    insitu_only_particle_ids   = np.array([])
+    
+    tagged_iords_to_write  = np.array([])
+    tagged_types_to_write  = np.array([])
     tagged_mstars_to_write = np.array([])
+    
     ts_to_write = np.array([])
     zs_to_write = np.array([])
     
@@ -219,12 +208,12 @@ def angmom_tag_over_full_sim(DMOsim, halonumber = 1 ,free_param_value = 0.01, py
         # was particle data loaded in (insitu) 
         decision=False
 
-        # was particle data loaded in (accreted) 
+        # was particle data loaded in through the accreted tagging part
         decision2=False
         decl = False
     
         print('Current snapshot -->',outputs[i])
-    
+
         # loading in the main halo object at this snapshot from tangos 
         hDMO = tangos.get_halo(DMOname+'/'+outputs[i]+'/halo_'+str(halonums[i]))
 
@@ -262,12 +251,10 @@ def angmom_tag_over_full_sim(DMOsim, halonumber = 1 ,free_param_value = 0.01, py
         #calculate the difference in mass between the two mstar's
         mass_select = int(msn-msp)
         print('stellar mass to be tagged in this snap -->',mass_select)
+        print('tagging for t (gyr) = ',t_all[i])
 
         # if stellar mass is to be tagged then load in particle data 
-    
         if mass_select>0:
-            
-            decision=True
             
             # try to load in the data from this snapshot
             
@@ -278,6 +265,7 @@ def angmom_tag_over_full_sim(DMOsim, halonumber = 1 ,free_param_value = 0.01, py
                 print('loading in DMO particles')
                 
                 DMOparticles = pynbody.load(simfn)
+                
                 # once the data from the snapshot has been loaded, .physical_units()
                 # converts all array’s units to be consistent with the distance, velocity, mass basis units specified.
                 DMOparticles.physical_units()
@@ -290,17 +278,17 @@ def angmom_tag_over_full_sim(DMOsim, halonumber = 1 ,free_param_value = 0.01, py
                 print(e)
                 print('--> DMO particle data exists but failed to read it, skipping!')
                 continue
-   
-            print('mass_select:',mass_select)
-            #print('total energy  ---------------------------------------------------->',DMOparticles.loadable_keys())
+
+            # data was loaded in
+            decision=True
+
+            print('mass to be tagged insitu:',mass_select)
             
             try:
                 hDMO['r200c']
             except:
                 print("Couldn't load in the R200 at timestep:" , i)
                 continue
-            
-            print('the time is:',t_all[i])
         
             subhalo_iords = np.array([])
             
@@ -328,11 +316,11 @@ def angmom_tag_over_full_sim(DMOsim, halonumber = 1 ,free_param_value = 0.01, py
                         subhalo_iords = np.append(subhalo_iords,halo_catalogue[int(ch)].dm['iord'])
                                                                                                                                         
                 h = h[np.logical_not(np.isin(h['iord'],subhalo_iords))] if len(subhalo_iords) >0 else h
-                
+
+            pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
 
             pynbody.analysis.halo.center(h)
 
-            pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
 
         
             try:                                                                                                                                                                                              
@@ -345,12 +333,10 @@ def angmom_tag_over_full_sim(DMOsim, halonumber = 1 ,free_param_value = 0.01, py
                         
             DMOparticles_insitu_only = DMOparticles[sqrt(DMOparticles['pos'][:,0]**2 + DMOparticles['pos'][:,1]**2 + DMOparticles['pos'][:,2]**2) <= r200c_pyn ] #hDMO['r200c']]
 
-            #print('angular_momentum: ', DMOparticles["j"])
-            
+            # will only be non empty if using AHF catalog
             DMOparticles_insitu_only = DMOparticles_insitu_only[np.logical_not(np.isin(DMOparticles_insitu_only['iord'],subhalo_iords))]
 
-            #DMOparticles_insitu_only = DMOparticles[np.logical_not(np.isin(DMOparticles['iord'],accreted_only_particle_ids))]
-
+            
             particles_sorted_by_angmom = rank_order_particles_by_angmom( DMOparticles_insitu_only)
             
             if particles_sorted_by_angmom.shape[0] == 0:
@@ -373,14 +359,15 @@ def angmom_tag_over_full_sim(DMOsim, halonumber = 1 ,free_param_value = 0.01, py
 
             del DMOparticles_insitu_only
             
-            #print('moving onto mergers loop')
             #get mergers ----------------------------------------------------------------------------------------------------------------
             # check whether current the snapshot has a the redshift just before the merger occurs.
         
         if (((i+1 < len(red_all)) and (red_all[i+1] in z_set_vals)) and (mergers == True)):
-                
+
+            # do not load in data again if loaded in through the insitu tagging part
             decision2 = False if decision==True else True
 
+            # loaded data in this snap
             decl=False
             
             t_id = int(np.where(z_set_vals==red_all[i+1])[0][0])
@@ -407,32 +394,30 @@ def angmom_tag_over_full_sim(DMOsim, halonumber = 1 ,free_param_value = 0.01, py
                     if (np.random.random() > prob_occupied):
                         print('Skipped')
                         continue
-                #angmom_tag_over_full_sim(hDM, free_param_value = 0.01, pynbody_path  = pynbody_path, occupation_frac = 'all', mergers = True)
-
+                        
                 
                 try:
                     t_2,redshift_2,vsmooth_2,sfh_in2,mstar_in2,mstar_merging = DarkLight(hDM,nscatter=0,vthres=26.3,zre=4.,pre_method='fiducial',post_method='schechter',post_scatter_method='increasing',binning='3bins',timesteps='sim',mergers=True,DMO=True,occupation=2.5e7,fn_vmax=None)
 
-                    #occupation='edge1', pre_method='fiducial_with_turnover', post_scatter_method='flat', DMO=True,mergers = True)
-                    #DarkLight(hDM,DMO=True)#,poccupied=occupation_frac,mergers=True)
-                    print(len(t_2))
-                    print(mstar_merging)
+                    if len(mstar_merging)==0:
+                        print("halo has not yet formed stars")
+                        continue
+
+
+                
                 except Exception as e :
                     print(e)
                     print('there are no darklight stars')
-                    #mstars_total_darklight = np.append(mstars_total_darklight,0.0)
                 
                     continue
         
         
-                if len(mstar_merging)==0:
-                    #mstars_total_darklight = np.append(mstars_total_darklight,0.0)
-                    continue
-
+                
                 mass_select_merge= mstar_merging[-1]
-                #mstars_total_darklight = np.append(mstars_total_darklight,mass_select_merge)
 
-                print(mass_select_merge)
+                print("tagging accreted Mstar = ",mass_select_merge )
+
+              
                 if int(mass_select_merge)<1:
                     leftover+=mstar_merging[-1]
                     continue
@@ -459,19 +444,13 @@ def angmom_tag_over_full_sim(DMOsim, halonumber = 1 ,free_param_value = 0.01, py
                         h_merge = DMOparticles.halos()[int(hDM.calculate('halo_number()'))-1]
                         pynbody.analysis.halo.center(h_merge.dm)
                         
-                        #r200c_pyn_acc = pynbody.analysis.halo.virial_radius(h_merge.d, overden=200, r_max=None, rho_def='critical')
                     except Exception as ex:
                         print('centering data unavailable, skipping',ex)
                         continue
                                                                                                            
                     r200c_pyn_acc = pynbody.analysis.halo.virial_radius(h_merge.d, overden=200, r_max=None, rho_def='critical')
-                    print('mass_select:',mass_select_merge)
-                    #print('total energy  ---------------------------------------------------->',DMOparticles.loadable_keys())
-                    print('sorting accreted particles by TE')
-                    #print(rank_order_particles_by_te(z_val, DMOparticles, hDM,'accreted'), 'output')
                     DMOparticles_acc_only = DMOparticles[sqrt(DMOparticles['pos'][:,0]**2 + DMOparticles['pos'][:,1]**2 + DMOparticles['pos'][:,2]**2) <= r200c_pyn_acc] 
 
-                    #DMOparticles_acc_only = DMOparticles[np.logical_not(np.isin(DMOparticles['iord'],insitu_only_particle_ids))]
                                             
                     try:
                         accreted_particles_sorted_by_angmom = rank_order_particles_by_angmom(DMOparticles_acc_only)
@@ -1007,3 +986,4 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
     
     
     
+
