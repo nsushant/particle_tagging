@@ -566,7 +566,9 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
                                     
     # Get stellar masses at each redshift using darklight for insitu tagging (mergers = False, excludes accreted mass)
 
-    t,redshift,vsmooth,sfh_insitu,mstar_s_insitu,mstar_total = DarkLight(main_halo,nscatter=0,vthres=26.3,zre=4.,pre_method='fiducial',post_method='schechter',post_scatter_method='increasing',binning='3bins',timesteps='sim',mergers=False,DMO=True,occupation=2.5e7,fn_vmax=None)
+    t,redshift,vsmooth,sfh_insitu,mstar_s_insitu,mstar_total = DarkLight(main_halo,mergers = False)
+    mstar_s_insitu = np.asarray(mstar_s_insitu[0])
+    print("t,z:",t,redshift)
 
     # calculate when the mergers took place and grab all the tangos halo objects involved in the merger (zmerge = merger redshift, hmerge = merging halo objects,qmerge = merger ratio)
     # these are based on the HOP catalogue by default 
@@ -662,6 +664,8 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
 
         # current snap's darklight calculated stellar mass 
         msn = mstar_s_insitu[idrz]              
+        
+        print("msn:",msn)
 
         # msp = previous snap's darklight calculated stellar mass 
         if msn != 0:
@@ -830,6 +834,7 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
                 #if (occupation_frac != 'all'):
                 try:
                     prob_occupied = calculate_poccupied(hDM,2.5e7)
+                    
                     #prob_occupied = 1
                 except Exception as e:
                     print(e)
@@ -840,9 +845,11 @@ def angmom_tag_over_full_sim_recursive(DMOsim,tstep, halonumber, free_param_valu
                     print('Skipped')
                     continue
                 try:
-                    t_2,redshift_2,vsmooth_2,sfh_in2,mstar_in2,mstar_merging = DarkLight(hDM,nscatter=0,vthres=26.3,zre=4.,pre_method='fiducial',post_method='schechter',post_scatter_method='increasing',binning='3bins',timesteps='sim',mergers=True,DMO=True,occupation=2.5e7,fn_vmax=None)
+                    t_2,redshift_2,vsmooth_2,sfh_in2,mstar_in2,mstar_merging = DarkLight(hDM,mergers=True)
 
-                    #occupation=occupation_frac, pre_method='fiducial_with_turnover', post_scatter_method='flat',DMO=True,mergers = True)
+                    mstar_merging = mstar_merging[0]
+
+                    #occupation=occupation_frac, pre_method='fiducial_with_turnover', post_scatter_method='flat',DMO=True,mergers = True
                     #occupation=2.5e7, pre_method='fiducial',post_method='fiducial',post_scatter_method='flat', DMO=True, mergers=True)
                     #occupation=2.5e7, pre_method='fiducial', post_method='fiducial', post_scatter_method='flat'
                 except Exception as e :

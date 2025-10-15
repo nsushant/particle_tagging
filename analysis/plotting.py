@@ -23,9 +23,13 @@ pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
 
 def edge_plot_tagged_vs_hydro_mass_dist(name_of_DMO_simulation, name_of_HYDRO_simulation, file_with_tagged_particles, time_to_plot, plot_type='2D Mass Distribution',label=None):
     
-    tangos_path     = '/scratch/dp101/shared/EDGE/tangos/'
-    pynbody_path    = '/scratch/dp101/shared/EDGE/'
-    
+    #tangos_path     = '/scratch/dp101/shared/EDGE/tangos/'
+    #pynbody_path    = '/scratch/dp101/shared/EDGE/'
+
+    pynbody_path = "/scratch/dp324/shared/dp101/EDGE/"
+    tangos_path = "/scratch/dp324/shared/dp101/EDGE/tangos/"    
+
+
     # finding mass distribution of tagged particles in DMO simulation 
 
     split = name_of_DMO_simulation.split('_')

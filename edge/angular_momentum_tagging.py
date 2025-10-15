@@ -265,14 +265,9 @@ def center_on_tagged(radial_dists,mass):
 
 
 def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_file=None,from_file = False,from_dataframe=False,save_to_file=True,AHF_centers_supplied=False,machine='astro',physics='edge1'):
-    #used paths
     
-    tangos_path_edge     = '/vol/ph/astro_data/shared/morkney/EDGE/tangos/'
-    tangos_path_chimera  = '/vol/ph/astro_data/shared/etaylor/CHIMERA/'
-    pynbody_path_edge    = '/vol/ph/astro_data/shared/morkney/EDGE/'
-    pynbody_path_chimera = '/vol/ph/astro_data/shared/etaylor/CHIMERA/'
-    pynbody_edge_gm =  '/vol/ph/astro_data2/shared/morkney/EDGE_GM/'
-
+    
+    
     '''
 
     'Halo383_fiducial'
@@ -283,7 +278,7 @@ def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_fi
 
     '''
      
-    path_AHF_halonums = "AHF_halonums/DMO/"+sim_name+"_rec.csv" if AHF_centers_supplied==True else "" 
+    path_AHF_halonums = "AHF_halonums/DMO/"+sim_name+".csv" if AHF_centers_supplied==True else "" 
     
     AHF_halonums = None
 
@@ -335,43 +330,10 @@ def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_fi
         else:
             #DMOname = 'Halo'+halonum+'_DMO' + ('' if len(split)==2 else ('_' +  '_'.join(split[2:]))) #if split[1]=='fiducial' else None
             DMOname = simname
-                        
-        # set the correct paths to data files
-        if machine=='astro':
-            if halonum == '383':
-                tangos_path  = tangos_path_chimera
-                pynbody_path = pynbody_path_chimera #if halonum == shortname else pynbody_edge_gm
-            else:
-                tangos_path  = tangos_path_edge
-                pynbody_path = pynbody_path_edge if halonum == shortname else pynbody_edge_gm
-
-        if machine == 'dirac':
-            if halonum=='383':
-                tangos_path = '/scratch/dp101/shared/EDGE/tangos/'
-            elif halonum=='153' or halonum=='261' or halonum=='339':
-                tangos_path = '/scratch/dp191/shared/tangos/'
-            else:
-                # need to add support for EDGE1 reruns once databases made.
-                tangos_path = '/scratch/dp101/shared/EDGE/tangos/'
-
-            if physics == 'edge1':
-
-                if halonum=='383':
-                    pynbody_path = '/scratch/dp101/shared/EDGE/'
-                    #.format(simname)
-                else:
-                    pynbody_path = '/scratch/dp101/shared/EDGE/'
-                    #.format('void_volume' if simname=='void' else simname)
-
-            elif physics=='edge2':
-
-                if halonum=='153' or halonum=='261' or halonum=='339':
-                    pynbody_path = '/scratch/dp191/shared/EDGE2_simulations/'
-                    #.format(simname)
-                else:
-                    pynbody_path = '/scratch/dp191/shared/RT_rerun_simulations/'
-                    #.format(simname)
-            
+    
+    
+        pynbody_path = "/scratch/dp324/shared/dp101/EDGE/"
+        tangos_path = "/scratch/dp324/shared/dp101/EDGE/tangos/"
         # get particle data at z=0 for DMO sims, if available
         if DMOname==None:
             print('--> DMO particle does not data exists, skipping!')
