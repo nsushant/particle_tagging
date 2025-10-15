@@ -265,18 +265,6 @@ def center_on_tagged(radial_dists,mass):
 
 
 def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_file=None,from_file = False,from_dataframe=False,save_to_file=True,AHF_centers_supplied=False,machine='astro',physics='edge1'):
-    
-    
-    
-    '''
-
-    'Halo383_fiducial'
-    'Halo383_fiducial_late', 'Halo383_fiducial_288', 'Halo383_fiducial_early','Halo383_Massive',
-    'Halo600_fiducial','Halo600_fiducial_later_mergers','Halo605_fiducial','Halo624_fiducial',
-    'Halo624_fiducial_higher_finalmass','Halo1445_fiducial','Halo1445_fiducial','Halo1459_fiducial_Mreionx02', 'Halo1459_fiducial_Mreionx03','Halo1459_fiducial_Mreionx12','Halo600_RT', 'Halo605_RT', 'Halo624_RT',
-    'Halo1445_RT','Halo1459_RT'
-
-    '''
      
     path_AHF_halonums = "AHF_halonums/DMO/"+sim_name+".csv" if AHF_centers_supplied==True else "" 
     
@@ -340,33 +328,20 @@ def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_fi
             continue
         
         DMOsim,main_halo,halonums,outputs = load_indexing_data(DMOname,1,machine=machine,physics=physics)
-                    
-        #outputs = np.array([DMOsim.timesteps[i].__dict__['extension'] for i in range(len(DMOsim.timesteps))])[-len(halonums):]
-
         print(outputs)
         
-        #snapshots = [ f for f in listdir(pynbody_path+DMOname) if (isdir(join(pynbody_path,DMOname,f)) and f[:6]=='output') ]
-        
-        #sort the list of snapshots in ascending order
-
-        #snapshots.sort()
-
     
         red_all =  main_halo.calculate_for_progenitors('z()')[0][::-1]
-        #np.array([DMOsim.timesteps[i].__dict__['redshift'] for i in range(len(DMOsim.timesteps)) ])
         t_all =  main_halo.calculate_for_progenitors('t()')[0][::-1]
-        #np.array([DMOsim.timesteps[i].__dict__['time_gyr'] for i in range(len(DMOsim.timesteps)) ])
         
-
+        
         #load in the two files containing the particle data
         if ( len(red_all) != len(outputs) ) : 
             print('output array length does not match redshift and time arrays')
 
         data_particles = pd.read_csv(particles_tagged)
-
-        #print('data parts',data_particles['t'])
-
         data_t = np.asarray(data_particles['t'].values)
+
         
         stored_reff = np.array([])
         stored_reff_acc = np.array([])
@@ -378,8 +353,9 @@ def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_fi
         PE_energy = np.array([])
         lum_based_halflight = np.array([])
 
-        #AHF_centers = pd.read_csv(str(AHF_centers_file)) if AHF_centers_supplied == True else None
-                
+        PrevBGMMIords = np.array([]) 
+        
+        
         for i in range(len(outputs)):
 
             gc.collect()
@@ -518,13 +494,53 @@ def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_fi
             DMOparticles = DMOparticles.dm[sqrt(DMOparticles.dm['pos'][:,0]**2 + DMOparticles.dm['pos'][:,1]**2 + DMOparticles.dm['pos'][:,2]**2) <= r200c_pyn ]        
 
             DMOparticles_only_insitu = DMOparticles.dm[np.logical_not(np.isin(DMOparticles.dm['iord'],children_dm))]
-            
-            #particle_selection_reff_tot = DMOparticles.dm[np.isin(DMOparticles.dm['iord'],selected_iords_tot)] if len(selected_iords_tot)>0 else []
+
 
             particle_selection_reff_tot = DMOparticles_only_insitu[np.isin(DMOparticles_only_insitu['iord'],selected_iords_tot)] if len(selected_iords_tot)>0 else [] 
-            print("length of particle_selection_reff_tot:",len(particle_selection_reff_tot))
+
+            # -------- BGMM Implementation---------#
             
-            particles_only_insitu = DMOparticles_only_insitu[np.isin(DMOparticles_only_insitu['iord'],selected_iords_insitu_only)] if len(DMOparticles_only_insitu) > 0 else []
+            x = particle_selection_reff_tot['x']
+            y = particle_selection_reff_tot['y']
+            z = particle_selection_reff_tot['z']
+            
+            xy = np.column_stack((x, y, z))
+
+
+            gmm = BayesianGaussianMixture(n_components=min(5,len(x)), weight_concentration_prior_type='dirichlet_process')
+            gmm.fit(xy)
+
+            labelsALL = gmm.predict(xy)
+
+            prevp = particle_selection_reff_tot[np.isin(particle_selection_reff_tot['iord'],PrevBGMMIords.flatten())]
+
+            if len(prevp) == 0:
+                print("largest cluster used, No previous particles")
+                largest = np.argmax(gmm.weights_)
+
+            else:
+                xp = prevp['x']
+                yp = prevp['y']
+                zp = prevp['z']
+
+
+                xyp = np.column_stack((xp, yp, zp))
+
+                labels = gmm.predict(xyp)
+
+                unique_elements, counts = np.unique(labels, return_counts=True)
+
+                largest = unique_elements[np.argmax(counts)]
+                
+
+            particle_selection_reff_tot = particle_selection_reff_tot[np.where(labelsALL == largest)]
+            PrevBGMMIords = np.delete( PrevBGMMIords, np.arange(len(PrevBGMMIords)) )
+            PrevBGMMIords = np.append(PrevBGMMIords,np.asarray(particle_selection_reff_tot['iord']))
+            pynbody.analysis.halo.center(particle_selection_reff_tot)
+            
+            #print("length of particle_selection_reff_tot:",len(particle_selection_reff_tot))
+            
+            #particles_only_insitu = DMOparticles_only_insitu[np.isin(DMOparticles_only_insitu['iord'],selected_iords_insitu_only)] if len(DMOparticles_only_insitu) > 0 else []
             
             
 
@@ -540,7 +556,7 @@ def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_fi
                 
                 masses = [ data_grouped.loc[n]['mstar'] for n in particle_selection_reff_tot['iord']]
                                 
-                
+                '''
                 masses_insitu = [data_grouped.loc[iord]['mstar'] for iord in particles_only_insitu['iord']]
                     
                 #cen_stars = calc_3D_cm(particles_only_insitu,masses_insitu)
@@ -554,7 +570,8 @@ def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_fi
                     masses4 = [ data_grouped.loc[n]['mstar'] for n in particle_selection_reff_tot4['iord']]
                     cen_stars = calc_3D_cm(particle_selection_reff_tot4,masses4)
                     particle_selection_reff_tot['pos'] -= cen_stars
-                    
+                '''
+                
                 # new cutoff calc begins 
                 distances = np.sqrt(particle_selection_reff_tot['x']**2+particle_selection_reff_tot['y']**2) 
                 #+ particle_selection_reff_tot['z']**2)                
@@ -606,4 +623,5 @@ def angmom_calculate_reffs(sim_name, particles_tagged,reffs_fname,AHF_centers_fi
         print('wrote', reffs_fname)
         
     return df_reff
+
 
